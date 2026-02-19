@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="refresh" content="86400">
+<title>NOC Dashboard — Juniper Routers</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&display=swap');
+  :root {
+    --bg:#080c12; --panel:#0d1520; --border:#1a2d45; --accent:#00d4ff;
+    --green:#00ff88; --yellow:#ffd600; --red:#ff2d55; --text:#c8daf0; --dim:#4a6070;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-serif;min-height:100vh;padding:20px;
+    background-image:radial-gradient(ellipse at 20% 0%,rgba(0,180,255,.06) 0%,transparent 60%),
+    radial-gradient(ellipse at 80% 100%,rgba(0,255,136,.04) 0%,transparent 60%);}
+
+  /* HEADER */
+  .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;
+    border-bottom:1px solid var(--border);padding-bottom:16px;}
+  .header h1{font-size:32px;font-weight:900;letter-spacing:-1px;color:#fff;text-transform:uppercase;line-height:1;}
+  .header h1 span{color:var(--accent);}
+  .header-sub{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);margin-top:4px;letter-spacing:1px;}
+  .header-right{text-align:right;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);line-height:1.9;}
+  .live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);
+    margin-right:5px;animation:pulse 1.5s infinite;vertical-align:middle;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  /* EQUIPOS */
+  .equipos-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  @media(max-width:1100px){.equipos-grid{grid-template-columns:1fr;}}
+
+  .equipo-panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    padding:20px;position:relative;overflow:hidden;}
+  .equipo-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.4;}
+  .error-panel{border-color:rgba(255,45,85,.3);}
+
+  .equipo-header{display:flex;justify-content:space-between;align-items:flex-start;
+    margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+  .equipo-name{font-size:24px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:#fff;}
+  .equipo-host{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);margin-top:3px;}
+
+  /* GAUGES */
+  .gauges-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:18px;}
+  .gauge-panel{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:6px;padding:14px 8px;}
+  .panel-label{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;
+    text-transform:uppercase;color:var(--dim);margin-bottom:10px;}
+  .gauge-wrap{display:flex;flex-direction:column;align-items:center;}
+  .gauge-svg{width:140px;height:80px;}
+  .gauge-value{font-family:'Share Tech Mono',monospace;font-size:26px;font-weight:bold;text-align:center;margin-top:2px;line-height:1;}
+  .gauge-unit{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);text-align:center;margin-top:2px;}
+  .gauge-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;text-align:center;margin-top:6px;}
+  .gauge-status{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-align:center;
+    margin-top:4px;padding:2px 8px;border-radius:3px;}
+
+  /* BANDWIDTH */
+  .bw-section{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:6px;padding:16px;margin-bottom:14px;}
+  .bw-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .bw-label{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);width:50px;flex-shrink:0;}
+  .bw-bar-bg{flex:1;height:18px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:3px;overflow:hidden;}
+  .bw-bar-fill{height:100%;border-radius:3px;}
+  .bw-value{font-family:'Share Tech Mono',monospace;font-size:11px;width:80px;text-align:right;flex-shrink:0;}
+  .big-meter-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .big-meter-title{font-size:13px;font-weight:600;color:var(--text);}
+  .big-meter-pct{font-family:'Share Tech Mono',monospace;font-size:18px;font-weight:bold;}
+  .big-meter-bar{height:26px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+  .big-meter-fill{height:100%;border-radius:4px;min-width:3px;}
+  .big-meter-ticks{display:flex;justify-content:space-between;margin-top:4px;}
+  .big-meter-ticks span{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);}
+
+  /* VERDICT */
+  .verdict-box{padding:12px 16px;border-radius:6px;border:1px solid;display:flex;align-items:center;gap:12px;}
+  .verdict-icon{font-size:24px;}
+  .verdict-title{font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
+  .verdict-desc{font-size:12px;color:var(--text);margin-top:2px;}
+
+  /* SYS INFO */
+  .sys-info{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:6px;padding:14px;}
+  .info-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(26,45,69,.7);}
+  .info-row:last-child{border-bottom:none;}
+  .info-key{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;}
+  .info-val{font-family:'Share Tech Mono',monospace;font-size:12px;color:#fff;}
+
+  /* FOOTER */
+  .footer{margin-top:16px;text-align:center;font-family:'Share Tech Mono',monospace;
+    font-size:10px;color:var(--dim);letter-spacing:2px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>NOC <span>DASHBOARD</span></h1>
+    <div class="header-sub">JUNIPER MX — MONITOREO DE CAPACIDAD EN TIEMPO REAL</div>
+  </div>
+  <div class="header-right">
+    <div><span class="live-dot"></span>SISTEMA ACTIVO</div>
+    <div>ACTUALIZACIÓN: 2026-02-18 23:34:46 CST</div>
+    <div>FRECUENCIA: 24H</div>
+  </div>
+</div>
+
+<div class="equipos-grid">
+
+    <div class="equipo-panel">
+      <!-- HEADER EQUIPO -->
+      <div class="equipo-header">
+        <div>
+          <div class="equipo-name">HostMega</div>
+          <div class="equipo-host">10.41.0.53 &nbsp;·&nbsp; N/A &nbsp;·&nbsp; RE-S-X6-128G-K</div>
+        </div>
+        <div style="text-align:right;font-family:'Share Tech Mono',monospace;font-size:11px;color:#4a6070;line-height:1.8;">
+          <div><span class="live-dot"></span>RE0 MASTER</div>
+          <div>UPTIME: 19 days, 22 hours, 1</div>
+          <div>MUESTRA: 2026-02-18 23:34:19</div>
+        </div>
+      </div>
+
+      <!-- GAUGES -->
+      <div class="gauges-row">
+
+        <!-- CPU -->
+        <div class="gauge-panel">
+          <div class="panel-label">CPU — RE Master</div>
+          <div class="gauge-wrap">
+            
+      <svg class="gauge-svg" viewBox="0 0 160 90">
+        <defs>
+          <linearGradient id="grad_00ff88" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#00ff88"/>
+            <stop offset="60%" style="stop-color:#ffd600"/>
+            <stop offset="100%" style="stop-color:#ff2d55"/>
+          </linearGradient>
+        </defs>
+        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#1a2d45" stroke-width="12" stroke-linecap="round"/>
+        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#00ff88" stroke-width="12" stroke-linecap="round"
+          stroke-dasharray="204" stroke-dashoffset="196"/>
+        <circle cx="80" cy="80" r="5" fill="#00ff88"/>
+        <text x="12" y="88" fill="#4a6070" font-size="9" font-family="monospace">0</text>
+        <text x="70" y="18" fill="#4a6070" font-size="9" font-family="monospace">50</text>
+        <text x="138" y="88" fill="#4a6070" font-size="9" font-family="monospace">100</text>
+      </svg>
+            <div class="gauge-value" style="color:#00ff88">4%</div>
+            <div class="gauge-unit">usado (96% idle)</div>
+            <div class="gauge-label">CPU Load</div>
+            <div class="gauge-status" style="background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.3)">✓ LIBRE</div>
+          </div>
+        </div>
+
+        <!-- MEMORIA -->
+        <div class="gauge-panel">
+          <div class="panel-label">RAM — 96 GB instalados</div>
+          <div class="gauge-wrap">
+            
+      <svg class="gauge-svg" viewBox="0 0 160 90">
+        <defs>
+          <linearGradient id="grad_00ff88" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#00ff88"/>
+            <stop offset="60%" style="stop-color:#ffd600"/>
+            <stop offset="100%" style="stop-color:#ff2d55"/>
+          </linearGradient>
+        </defs>
+        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#1a2d45" stroke-width="12" stroke-linecap="round"/>
+        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#00ff88" stroke-width="12" stroke-linecap="round"
+          stroke-dasharray="204" stroke-dashoffset="198"/>
+        <circle cx="80" cy="80" r="5" fill="#00ff88"/>
+        <text x="12" y="88" fill="#4a6070" font-size="9" font-family="monospace">0</text>
+        <text x="70" y="18" fill="#4a6070" font-size="9" font-family="monospace">50</text>
+        <text x="138" y="88" fill="#4a6070" font-size="9" font-family="monospace">100</text>
+      </svg>
+            <div class="gauge-value" style="color:#00ff88">3%</div>
+            <div class="gauge-unit">~2 GB / 96 GB</div>
+            <div class="gauge-label">Memory Usage</div>
+            <div class="gauge-status" style="background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.3)">✓ SOBRADO</div>
+          </div>
+        </div>
+
+        <!-- TEMPERATURA -->
+        <div class="gauge-panel">
+          <div class="panel-label">Temperatura</div>
+          <div class="gauge-wrap">
+            
+      <svg class="gauge-svg" viewBox="0 0 160 90">
+        <defs>
+          <linearGradient id="grad_00ff88" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#00ff88"/>
+            <stop offset="60%" style="stop-color:#ffd600"/>
+            <stop offset="100%" style="stop-color:#ff2d55"/>
+          </linearGradient>
+        </defs>
+        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#1a2d45" stroke-width="12" stroke-linecap="round"/>
+        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#00ff88" stroke-width="12" stroke-linecap="round"
+          stroke-dasharray="204" stroke-dashoffset="76"/>
+        <circle cx="80" cy="80" r="5" fill="#00ff88"/>
+        <text x="12" y="88" fill="#4a6070" font-size="9" font-family="monospace">0</text>
+        <text x="70" y="18" fill="#4a6070" font-size="9" font-family="monospace">45°</text>
+        <text x="138" y="88" fill="#4a6070" font-size="9" font-family="monospace">90</text>
+      </svg>
+            <div class="gauge-value" style="color:#00ff88">51°C</div>
+            <div class="gauge-unit">CPU | Chasis: 34°C</div>
+            <div class="gauge-label">Temperatura</div>
+            <div class="gauge-status" style="background:rgba(255,214,0,0.1);color:#00ff88;border:1px solid rgba(255,214,0,0.3)">✓ NORMAL</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- BANDWIDTH -->
+      <div class="bw-section">
+        <div class="panel-label" style="margin-bottom:12px;">Bandwidth — 32 puertos × 10 Gbps = 320 Gbps capacidad</div>
+
+        <div class="big-meter">
+          <div class="big-meter-header">
+            <div class="big-meter-title">↓ INPUT Total</div>
+            <div class="big-meter-pct" style="color:#00d4ff">239.4 Mbps &nbsp;<span style="font-size:13px;color:#4a6070">(0.075% cap.)</span></div>
+          </div>
+          <div class="big-meter-bar">
+            <div class="big-meter-fill" style="width:0.300%;background:linear-gradient(90deg,#003388,#00d4ff)"></div>
+          </div>
+        </div>
+
+        <div class="big-meter" style="margin-top:12px;">
+          <div class="big-meter-header">
+            <div class="big-meter-title">↑ OUTPUT Total</div>
+            <div class="big-meter-pct" style="color:#00ff88">244.2 Mbps &nbsp;<span style="font-size:13px;color:#4a6070">(0.076% cap.)</span></div>
+          </div>
+          <div class="big-meter-bar">
+            <div class="big-meter-fill" style="width:0.300%;background:linear-gradient(90deg,#003322,#00ff88)"></div>
+          </div>
+          <div class="big-meter-ticks">
+            <span>0</span><span>80 Gbps</span><span>160 Gbps</span><span>240 Gbps</span><span>320 Gbps</span>
+          </div>
+        </div>
+
+        <!-- Top interfaces -->
+        <div style="margin-top:16px;">
+          <div class="panel-label" style="margin-bottom:8px;">Top interfaces por tráfico</div>
+          
+        <div class="bw-row">
+          <div class="bw-label">#1 ↓ IN</div>
+          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:100%;background:linear-gradient(90deg,#003388,#00d4ff)"></div></div>
+          <div class="bw-value" style="color:#00d4ff">47.9 Mbps</div>
+        </div>
+        <div class="bw-row">
+          <div class="bw-label">#1 ↑ OUT</div>
+          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:24%;background:linear-gradient(90deg,#003322,#00ff88)"></div></div>
+          <div class="bw-value" style="color:#00ff88">11.6 Mbps</div>
+        </div>
+        <div class="bw-row">
+          <div class="bw-label">#2 ↓ IN</div>
+          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:60%;background:linear-gradient(90deg,#003388,#00d4ff)"></div></div>
+          <div class="bw-value" style="color:#00d4ff">28.5 Mbps</div>
+        </div>
+        <div class="bw-row">
+          <div class="bw-label">#2 ↑ OUT</div>
+          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:24%;background:linear-gradient(90deg,#003322,#00ff88)"></div></div>
+          <div class="bw-value" style="color:#00ff88">11.5 Mbps</div>
+        </div>
+        <div class="bw-row">
+          <div class="bw-label">#3 ↓ IN</div>
+          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:50%;background:linear-gradient(90deg,#003388,#00d4ff)"></div></div>
+          <div class="bw-value" style="color:#00d4ff">24.0 Mbps</div>
+        </div>
+        <div class="bw-row">
+          <div class="bw-label">#3 ↑ OUT</div>
+          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:32%;background:linear-gradient(90deg,#003322,#00ff88)"></div></div>
+          <div class="bw-value" style="color:#00ff88">15.4 Mbps</div>
+        </div>
+        </div>
+
+        <!-- Veredicto -->
+        <div class="verdict-box" style="background:rgba(0,255,136,0.05);border-color:rgba(0,255,136,0.25);margin-top:14px;">
+          <div class="verdict-icon">🟢</div>
+          <div>
+            <div class="verdict-title" style="color:#00ff88;">Equipo Sobrado</div>
+            <div class="verdict-desc">Router operando con amplia capacidad libre. Bandwidth al 0.08% del total instalado.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INFO SISTEMA -->
+      <div class="sys-info">
+        <div class="panel-label" style="margin-bottom:10px;">Sistema</div>
+        <div class="info-row"><div class="info-key">Modelo RE</div><div class="info-val">RE-S-X6-128G-K</div></div>
+        <div class="info-row"><div class="info-key">DRAM</div><div class="info-val">96 GB</div></div>
+        <div class="info-row"><div class="info-key">Puertos</div><div class="info-val">32 × 10 Gbps</div></div>
+        <div class="info-row"><div class="info-key">Capacidad</div><div class="info-val">320 Gbps</div></div>
+        <div class="info-row"><div class="info-key">JUNOS</div><div class="info-val">N/A</div></div>
+      </div>
+
+    </div>
+
+    <div class="equipo-panel">
+      <!-- HEADER EQUIPO -->
+      <div class="equipo-header">
+        <div>
+          <div class="equipo-name">HostTol</div>
+          <div class="equipo-host">10.150.96.36 &nbsp;·&nbsp; N/A &nbsp;·&nbsp; RE-S-X6-128G-K</div>
+        </div>
+        <div style="text-align:right;font-family:'Share Tech Mono',monospace;font-size:11px;color:#4a6070;line-height:1.8;">
+          <div><span class="live-dot"></span>RE0 MASTER</div>
+          <div>UPTIME: 33 days, 18 hours, 4</div>
+          <div>MUESTRA: 2026-02-18 23:34:46</div>
+        </div>
+      </div>
+
+      <!-- GAUGES -->
+      <div class="gauges-row">
+
+        <!-- CPU -->
+        <div class="gauge-panel">
+          <div class="panel-label">CPU — RE Master</div>
+          <div class="gauge-wrap">
+            
+      <svg class="gauge-svg" viewBox="0 0 160 90">
+        <defs>
+          <linearGradient id="grad_00ff88" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#00ff88"/>
+            <stop offset="60%" style="stop-color:#ffd600"/>
+            <stop offset="100%" style="stop-color:#ff2d55"/>
+          </linearGradient>
+        </defs>
+        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#1a2d45" stroke-width="12" stroke-linecap="round"/>
+        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#00ff88" stroke-width="12" stroke-linecap="round"
+          stroke-dasharray="204" stroke-dashoffset="194"/>
+        <circle cx="80" cy="80" r="5" fill="#00ff88"/>
+        <text x="12" y="88" fill="#4a6070" font-size="9" font-family="monospace">0</text>
+        <text x="70" y="18" fill="#4a6070" font-size="9" font-family="monospace">50</text>
+        <text x="138" y="88" fill="#4a6070" font-size="9" font-family="monospace">100</text>
+      </svg>
+            <div class="gauge-value" style="color:#00ff88">5%</div>
+            <div class="gauge-unit">usado (95% idle)</div>
+            <div class="gauge-label">CPU Load</div>
+            <div class="gauge-status" style="background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.3)">✓ LIBRE</div>
+          </div>
+        </div>
+
+        <!-- MEMORIA -->
+        <div class="gauge-panel">
+          <div class="panel-label">RAM — 96 GB instalados</div>
+          <div class="gauge-wrap">
+            
+      <svg class="gauge-svg" viewBox="0 0 160 90">
+        <defs>
+          <linearGradient id="grad_00ff88" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#00ff88"/>
+            <stop offset="60%" style="stop-color:#ffd600"/>
+            <stop offset="100%" style="stop-color:#ff2d55"/>
+          </linearGradient>
+        </defs>
+        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#1a2d45" stroke-width="12" stroke-linecap="round"/>
+        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#00ff88" stroke-width="12" stroke-linecap="round"
+          stroke-dasharray="204" stroke-dashoffset="198"/>
+        <circle cx="80" cy="80" r="5" fill="#00ff88"/>
+        <text x="12" y="88" fill="#4a6070" font-size="9" font-family="monospace">0</text>
+        <text x="70" y="18" fill="#4a6070" font-size="9" font-family="monospace">50</text>
+        <text x="138" y="88" fill="#4a6070" font-size="9" font-family="monospace">100</text>
+      </svg>
+            <div class="gauge-value" style="color:#00ff88">3%</div>
+            <div class="gauge-unit">~2 GB / 96 GB</div>
+            <div class="gauge-label">Memory Usage</div>
+            <div class="gauge-status" style="background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.3)">✓ SOBRADO</div>
+          </div>
+        </div>
+
+        <!-- TEMPERATURA -->
+        <div class="gauge-panel">
+          <div class="panel-label">Temperatura</div>
+          <div class="gauge-wrap">
+            
+      <svg class="gauge-svg" viewBox="0 0 160 90">
+        <defs>
+          <linearGradient id="grad_ffd600" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#00ff88"/>
+            <stop offset="60%" style="stop-color:#ffd600"/>
+            <stop offset="100%" style="stop-color:#ff2d55"/>
+          </linearGradient>
+        </defs>
+        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#1a2d45" stroke-width="12" stroke-linecap="round"/>
+        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#ffd600" stroke-width="12" stroke-linecap="round"
+          stroke-dasharray="204" stroke-dashoffset="58"/>
+        <circle cx="80" cy="80" r="5" fill="#ffd600"/>
+        <text x="12" y="88" fill="#4a6070" font-size="9" font-family="monospace">0</text>
+        <text x="70" y="18" fill="#4a6070" font-size="9" font-family="monospace">45°</text>
+        <text x="138" y="88" fill="#4a6070" font-size="9" font-family="monospace">90</text>
+      </svg>
+            <div class="gauge-value" style="color:#ffd600">58°C</div>
+            <div class="gauge-unit">CPU | Chasis: 39°C</div>
+            <div class="gauge-label">Temperatura</div>
+            <div class="gauge-status" style="background:rgba(255,214,0,0.1);color:#ffd600;border:1px solid rgba(255,214,0,0.3)">✓ NORMAL</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- BANDWIDTH -->
+      <div class="bw-section">
+        <div class="panel-label" style="margin-bottom:12px;">Bandwidth — 33 puertos × 10 Gbps = 330 Gbps capacidad</div>
+
+        <div class="big-meter">
+          <div class="big-meter-header">
+            <div class="big-meter-title">↓ INPUT Total</div>
+            <div class="big-meter-pct" style="color:#00d4ff">508.0 Mbps &nbsp;<span style="font-size:13px;color:#4a6070">(0.154% cap.)</span></div>
+          </div>
+          <div class="big-meter-bar">
+            <div class="big-meter-fill" style="width:0.300%;background:linear-gradient(90deg,#003388,#00d4ff)"></div>
+          </div>
+        </div>
+
+        <div class="big-meter" style="margin-top:12px;">
+          <div class="big-meter-header">
+            <div class="big-meter-title">↑ OUTPUT Total</div>
+            <div class="big-meter-pct" style="color:#00ff88">499.3 Mbps &nbsp;<span style="font-size:13px;color:#4a6070">(0.151% cap.)</span></div>
+          </div>
+          <div class="big-meter-bar">
+            <div class="big-meter-fill" style="width:0.300%;background:linear-gradient(90deg,#003322,#00ff88)"></div>
+          </div>
+          <div class="big-meter-ticks">
+            <span>0</span><span>82 Gbps</span><span>165 Gbps</span><span>248 Gbps</span><span>330 Gbps</span>
+          </div>
+        </div>
+
+        <!-- Top interfaces -->
+        <div style="margin-top:16px;">
+          <div class="panel-label" style="margin-bottom:8px;">Top interfaces por tráfico</div>
+          
+        <div class="bw-row">
+          <div class="bw-label">#1 ↓ IN</div>
+          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:100%;background:linear-gradient(90deg,#003388,#00d4ff)"></div></div>
+          <div class="bw-value" style="color:#00d4ff">54.2 Mbps</div>
+        </div>
+        <div class="bw-row">
+          <div class="bw-label">#1 ↑ OUT</div>
+          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:93%;background:linear-gradient(90deg,#003322,#00ff88)"></div></div>
+          <div class="bw-value" style="color:#00ff88">50.3 Mbps</div>
+        </div>
+        <div class="bw-row">
+          <div class="bw-label">#2 ↓ IN</div>
+          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:95%;background:linear-gradient(90deg,#003388,#00d4ff)"></div></div>
+          <div class="bw-value" style="color:#00d4ff">51.4 Mbps</div>
+        </div>
+        <div class="bw-row">
+          <div class="bw-label">#2 ↑ OUT</div>
+          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:92%;background:linear-gradient(90deg,#003322,#00ff88)"></div></div>
+          <div class="bw-value" style="color:#00ff88">49.8 Mbps</div>
+        </div>
+        <div class="bw-row">
+          <div class="bw-label">#3 ↓ IN</div>
+          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:76%;background:linear-gradient(90deg,#003388,#00d4ff)"></div></div>
+          <div class="bw-value" style="color:#00d4ff">41.1 Mbps</div>
+        </div>
+        <div class="bw-row">
+          <div class="bw-label">#3 ↑ OUT</div>
+          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:41%;background:linear-gradient(90deg,#003322,#00ff88)"></div></div>
+          <div class="bw-value" style="color:#00ff88">22.2 Mbps</div>
+        </div>
+        </div>
+
+        <!-- Veredicto -->
+        <div class="verdict-box" style="background:rgba(0,255,136,0.05);border-color:rgba(0,255,136,0.25);margin-top:14px;">
+          <div class="verdict-icon">🟢</div>
+          <div>
+            <div class="verdict-title" style="color:#00ff88;">Equipo Sobrado</div>
+            <div class="verdict-desc">Router operando con amplia capacidad libre. Bandwidth al 0.15% del total instalado.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INFO SISTEMA -->
+      <div class="sys-info">
+        <div class="panel-label" style="margin-bottom:10px;">Sistema</div>
+        <div class="info-row"><div class="info-key">Modelo RE</div><div class="info-val">RE-S-X6-128G-K</div></div>
+        <div class="info-row"><div class="info-key">DRAM</div><div class="info-val">96 GB</div></div>
+        <div class="info-row"><div class="info-key">Puertos</div><div class="info-val">33 × 10 Gbps</div></div>
+        <div class="info-row"><div class="info-key">Capacidad</div><div class="info-val">330 Gbps</div></div>
+        <div class="info-row"><div class="info-key">JUNOS</div><div class="info-val">N/A</div></div>
+      </div>
+
+    </div>
+</div>
+
+<div class="footer">
+  GENERADO AUTOMÁTICAMENTE · 2026-02-18 23:34:46 CST · SSH JUNIPER EXTENSIVE POLLING
+</div>
+
+</body>
+</html>
