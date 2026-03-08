@@ -2,540 +2,857 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="refresh" content="86400">
-<title>NOC Dashboard — Juniper Routers</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>NOC Dashboard — AT&T México</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;900&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&display=swap');
-  :root {
-    --bg:#080c12; --panel:#0d1520; --border:#1a2d45; --accent:#00d4ff;
-    --green:#00ff88; --yellow:#ffd600; --red:#ff2d55; --text:#c8daf0; --dim:#4a6070;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-serif;min-height:100vh;padding:20px;
-    background-image:radial-gradient(ellipse at 20% 0%,rgba(0,180,255,.06) 0%,transparent 60%),
-    radial-gradient(ellipse at 80% 100%,rgba(0,255,136,.04) 0%,transparent 60%);}
-
-  /* HEADER */
-  .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;
-    border-bottom:1px solid var(--border);padding-bottom:16px;}
-  .header h1{font-size:32px;font-weight:900;letter-spacing:-1px;color:#fff;text-transform:uppercase;line-height:1;}
-  .header h1 span{color:var(--accent);}
-  .header-sub{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);margin-top:4px;letter-spacing:1px;}
-  .header-right{text-align:right;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);line-height:1.9;}
-  .live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);
-    margin-right:5px;animation:pulse 1.5s infinite;vertical-align:middle;}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-
-  /* EQUIPOS */
-  .equipos-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
-  @media(max-width:1100px){.equipos-grid{grid-template-columns:1fr;}}
-
-  .equipo-panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;
-    padding:20px;position:relative;overflow:hidden;}
-  .equipo-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
-    background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.4;}
-  .error-panel{border-color:rgba(255,45,85,.3);}
-
-  .equipo-header{display:flex;justify-content:space-between;align-items:flex-start;
-    margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border);}
-  .equipo-name{font-size:24px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:#fff;}
-  .equipo-host{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);margin-top:3px;}
-
-  /* GAUGES */
-  .gauges-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:18px;}
-  .gauge-panel{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:6px;padding:14px 8px;}
-  .panel-label{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;
-    text-transform:uppercase;color:var(--dim);margin-bottom:10px;}
-  .gauge-wrap{display:flex;flex-direction:column;align-items:center;}
-  .gauge-svg{width:140px;height:80px;}
-  .gauge-value{font-family:'Share Tech Mono',monospace;font-size:26px;font-weight:bold;text-align:center;margin-top:2px;line-height:1;}
-  .gauge-unit{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);text-align:center;margin-top:2px;}
-  .gauge-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;text-align:center;margin-top:6px;}
-  .gauge-status{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-align:center;
-    margin-top:4px;padding:2px 8px;border-radius:3px;}
-
-  /* BANDWIDTH */
-  .bw-section{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:6px;padding:16px;margin-bottom:14px;}
-  .bw-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-  .bw-label{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);width:50px;flex-shrink:0;}
-  .bw-bar-bg{flex:1;height:18px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:3px;overflow:hidden;}
-  .bw-bar-fill{height:100%;border-radius:3px;}
-  .bw-value{font-family:'Share Tech Mono',monospace;font-size:11px;width:80px;text-align:right;flex-shrink:0;}
-  .big-meter-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
-  .big-meter-title{font-size:13px;font-weight:600;color:var(--text);}
-  .big-meter-pct{font-family:'Share Tech Mono',monospace;font-size:18px;font-weight:bold;}
-  .big-meter-bar{height:26px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
-  .big-meter-fill{height:100%;border-radius:4px;min-width:3px;}
-  .big-meter-ticks{display:flex;justify-content:space-between;margin-top:4px;}
-  .big-meter-ticks span{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);}
-
-  /* VERDICT */
-  .verdict-box{padding:12px 16px;border-radius:6px;border:1px solid;display:flex;align-items:center;gap:12px;}
-  .verdict-icon{font-size:24px;}
-  .verdict-title{font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:1px;}
-  .verdict-desc{font-size:12px;color:var(--text);margin-top:2px;}
-
-  /* SYS INFO */
-  .sys-info{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:6px;padding:14px;}
-  .info-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(26,45,69,.7);}
-  .info-row:last-child{border-bottom:none;}
-  .info-key{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;}
-  .info-val{font-family:'Share Tech Mono',monospace;font-size:12px;color:#fff;}
-
-  /* FOOTER */
-  .footer{margin-top:16px;text-align:center;font-family:'Share Tech Mono',monospace;
-    font-size:10px;color:var(--dim);letter-spacing:2px;}
+:root{
+  --bg:#070b11;--panel:#0c1420;--border:#1a2d44;
+  --accent:#00d4ff;--green:#00ff88;--yellow:#ffd600;
+  --orange:#ff8c00;--red:#ff2d55;
+  --dim:#3a5570;--text:#8ab0c8;--white:#e8f4ff;
+  --mono:'Share Tech Mono',monospace;
+  --display:'Barlow Condensed',sans-serif;
+  --body:'Barlow',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:var(--bg);color:var(--white);font-family:var(--body);min-height:100vh;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%,rgba(0,212,255,.06) 0%,transparent 60%),
+    repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(26,45,68,.25) 39px,rgba(26,45,68,.25) 40px),
+    repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(26,45,68,.12) 39px,rgba(26,45,68,.12) 40px);
+}
+.header{border-bottom:1px solid var(--border);padding:13px 28px;display:flex;align-items:center;justify-content:space-between;background:rgba(12,20,32,.95);position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);}
+.header-l{display:flex;align-items:center;gap:14px;}
+.logo{font-family:var(--display);font-size:22px;font-weight:900;letter-spacing:3px;color:var(--accent);}
+.logo span{color:var(--white);}
+.hbadge{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);color:var(--accent);font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:2px;letter-spacing:2px;}
+.header-r{display:flex;align-items:center;gap:18px;font-family:var(--mono);font-size:11px;color:var(--dim);}
+.live-dot{width:7px;height:7px;background:var(--green);border-radius:50%;display:inline-block;margin-right:5px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,255,136,.4)}50%{opacity:.6;box-shadow:0 0 0 5px rgba(0,255,136,0)}}
+.main{padding:20px 24px;max-width:1600px;margin:0 auto;}
+.summary-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;}
+.sum-card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:14px 16px;position:relative;overflow:hidden;}
+.sum-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.c-juniper::before{background:var(--accent);}
+.c-cisco::before{background:var(--green);}
+.c-forti::before{background:var(--yellow);}
+.c-tot-up::before{background:var(--green);}
+.c-tot-alrt::before{background:var(--red);}
+.sum-lbl{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:5px;}
+.sum-val{font-family:var(--display);font-size:32px;font-weight:900;line-height:1;}
+.sum-sub{font-size:11px;color:var(--text);margin-top:4px;}
+.sec-title{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:12px;display:flex;align-items:center;flex-wrap:wrap;gap:10px;}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border);min-width:20px;}
+.ts-badge{font-family:var(--mono);font-size:9px;color:var(--text);background:rgba(0,0,0,.35);border:1px solid var(--border);padding:2px 8px;border-radius:2px;letter-spacing:1px;white-space:nowrap;}
+.ts-sin{color:var(--red);border-color:rgba(255,45,85,.3);}
+.juniper-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
+.router-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;border-top:2px solid var(--accent);}
+.router-hdr{display:flex;justify-content:space-between;align-items:flex-start;padding:14px 18px 10px;border-bottom:1px solid var(--border);}
+.router-name{font-family:var(--display);font-size:22px;font-weight:900;letter-spacing:2px;color:var(--white);display:flex;align-items:center;gap:10px;}
+.router-sub{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:4px;}
+.tag{font-size:10px;font-weight:400;font-family:var(--mono);background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);color:var(--accent);padding:2px 7px;border-radius:2px;}
+.router-meta{text-align:right;font-family:var(--mono);font-size:10px;color:var(--dim);line-height:1.9;}
+.gauges-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px 18px;}
+.gauge-box{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:6px;padding:12px 10px;text-align:center;}
+.g-lbl{font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--dim);margin-bottom:6px;text-transform:uppercase;}
+.g-val{font-family:var(--display);font-size:22px;font-weight:900;}
+.g-unit{font-size:10px;color:var(--text);margin-top:2px;}
+.cap-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 18px 14px;}
+.cap-idx{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:6px;padding:14px;text-align:center;}
+.big-pct{font-family:var(--mono);font-size:38px;font-weight:bold;line-height:1;}
+.cap-sub{font-size:10px;color:var(--dim);letter-spacing:1px;margin-top:4px;}
+.scale-bar{margin:10px 0 4px;height:12px;border-radius:20px;background:linear-gradient(90deg,#00ff88,#ffd600,#ff8c00,#ff2d55);position:relative;border:1px solid var(--border);}
+.scale-needle{position:absolute;top:-3px;width:7px;height:18px;background:#fff;border-radius:2px;transform:translateX(-50%);box-shadow:0 0 8px rgba(255,255,255,.5);}
+.scale-lbl{display:flex;justify-content:space-between;font-family:var(--mono);font-size:8px;color:var(--dim);}
+.verdict-box{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:6px;padding:14px;display:flex;flex-direction:column;justify-content:center;gap:4px;}
+.v-meta{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--dim);}
+.v-title{font-family:var(--display);font-size:18px;font-weight:900;letter-spacing:1px;}
+.v-desc{font-size:11px;color:var(--text);line-height:1.5;}
+.bw-section{padding:0 18px 14px;}
+.bw-lbl{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--dim);margin-bottom:8px;text-transform:uppercase;}
+.bw-row{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.bw-name{font-family:var(--mono);font-size:10px;color:var(--text);width:78px;flex-shrink:0;}
+.bw-bar-w{flex:1;height:10px;background:rgba(255,255,255,.05);border-radius:20px;overflow:hidden;}
+.bw-bar{height:100%;border-radius:20px;min-width:2px;}
+.bw-val{font-family:var(--mono);font-size:10px;color:var(--accent);width:175px;text-align:right;flex-shrink:0;}
+.bw-dim{color:var(--dim);}
+.no-iface{font-family:var(--mono);font-size:10px;color:var(--dim);padding:6px 0;}
+.vpn-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.forti-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:18px;}
+.vpn-hdr{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
+.vpn-title{font-family:var(--display);font-size:16px;font-weight:900;letter-spacing:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.vpn-sub{font-size:10px;color:var(--dim);font-weight:400;font-family:var(--mono);margin-left:4px;}
+.stats-row{display:flex;gap:14px;}
+.stat{text-align:center;}
+.stat-val{font-family:var(--display);font-size:26px;font-weight:900;line-height:1;}
+.stat-lbl{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:1px;}
+.donut-row{padding:16px 18px;display:flex;align-items:center;gap:20px;border-bottom:1px solid var(--border);}
+.donut-wrap{position:relative;flex-shrink:0;}
+.donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+.donut-pct{font-family:var(--display);font-size:20px;font-weight:900;line-height:1;}
+.donut-lbl{font-family:var(--mono);font-size:8px;color:var(--dim);}
+.legend{flex:1;}
+.leg-item{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-family:var(--mono);font-size:11px;}
+.leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.leg-bar-w{flex:1;height:6px;background:rgba(255,255,255,.05);border-radius:10px;overflow:hidden;}
+.leg-bar{height:100%;border-radius:10px;}
+.leg-val{color:var(--text);width:28px;text-align:right;font-size:11px;}
+.tabs{display:flex;gap:4px;padding:10px 14px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.15);}
+.tab{font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:5px 11px;border-radius:3px;cursor:pointer;border:1px solid transparent;color:var(--dim);transition:all .2s;}
+.tab.active{background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.3);color:var(--accent);}
+.tab:hover:not(.active){color:var(--text);border-color:var(--border);}
+.tab-body{display:none;}.tab-body.active{display:block;}
+.peer-list{padding:0 14px 10px;max-height:240px;overflow-y:auto;}
+.peer-list::-webkit-scrollbar{width:4px;}
+.peer-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.peer-hdr{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--dim);padding:8px 0 6px;display:grid;grid-template-columns:14px 1fr 110px 60px;gap:8px;border-bottom:1px solid var(--border);margin-bottom:4px;position:sticky;top:0;background:var(--panel);}
+.peer-hdr5{grid-template-columns:14px 1fr 110px 50px 60px !important;}
+.peer-row{display:grid;grid-template-columns:14px 1fr 110px 60px;gap:8px;padding:5px 0;border-bottom:1px solid rgba(26,45,68,.5);align-items:center;}
+.peer-row5{grid-template-columns:14px 1fr 110px 50px 60px !important;}
+.peer-row:last-child{border-bottom:none;}
+.peer-dot{width:7px;height:7px;border-radius:50%;}
+.peer-name{font-family:var(--mono);font-size:10px;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.peer-ip{font-family:var(--mono);font-size:10px;color:var(--dim);}
+.badge{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:2px;text-align:center;letter-spacing:1px;justify-self:end;}
+.badge-up{background:rgba(0,255,136,.1);color:var(--green);border:1px solid rgba(0,255,136,.2);}
+.badge-down{background:rgba(255,45,85,.1);color:var(--red);border:1px solid rgba(255,45,85,.2);}
+.badge-parcial{background:rgba(255,214,0,.1);color:var(--yellow);border:1px solid rgba(255,214,0,.2);}
+.all-ok{padding:12px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--green);}
+.forti-body{display:grid;grid-template-columns:200px 1fr;}
+.forti-donut{padding:16px;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;}
+.forti-tabs{display:flex;flex-direction:column;}
+.no-data{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:24px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:12px;margin-bottom:18px;letter-spacing:1px;}
+.footer{border-top:1px solid var(--border);padding:14px 28px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;color:var(--dim);}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div>
-    <h1>NOC <span>DASHBOARD</span></h1>
-    <div class="header-sub">JUNIPER MX — MONITOREO DE CAPACIDAD EN TIEMPO REAL</div>
+  <div class="header-l">
+    <div class="logo">NOC <span>Dashboard</span></div>
+    <div class="hbadge">AT&amp;T MÉXICO</div>
   </div>
-  <div class="header-right">
-    <div><span class="live-dot"></span>SISTEMA ACTIVO</div>
-    <div>ACTUALIZACIÓN: 2026-03-06 08:03:12 CST</div>
-    <div>FRECUENCIA: 24H</div>
+  <div class="header-r">
+    <span><span class="live-dot"></span>EN VIVO</span>
+    <span>PUBLICADO: 2026-03-07 23:39</span>
   </div>
 </div>
 
-<div class="equipos-grid">
-
-    <div class="equipo-panel">
-      <!-- HEADER EQUIPO -->
-      <div class="equipo-header">
+<div class="main">
+  
+  <div class="summary-bar">
+    <div class="sum-card c-juniper">
+      <div class="sum-lbl">Juniper Routers</div>
+      <div class="sum-val" style="color:var(--accent)">2</div>
+      <div class="sum-sub">HostMega · HostTol</div>
+    </div>
+    <div class="sum-card c-cisco">
+      <div class="sum-lbl">VPNs Cisco ASA</div>
+      <div class="sum-val" style="color:var(--yellow)">58<span style="font-size:16px;color:var(--dim)"> / 61</span></div>
+      <div class="sum-sub">3 peers DOWN</div>
+    </div>
+    <div class="sum-card c-forti">
+      <div class="sum-lbl">VPNs Fortinet TLA</div>
+      <div class="sum-val" style="color:var(--yellow)">58<span style="font-size:16px;color:var(--dim)"> / 155</span></div>
+      <div class="sum-sub">13 PARCIAL · 84 DOWN</div>
+    </div>
+    <div class="sum-card c-tot-up">
+      <div class="sum-lbl">Total VPNs UP</div>
+      <div class="sum-val" style="color:var(--green)">116</div>
+      <div class="sum-sub">de 216 monitoreadas</div>
+    </div>
+    <div class="sum-card c-tot-alrt">
+      <div class="sum-lbl">Total con alertas</div>
+      <div class="sum-val" style="color:var(--red)">100</div>
+      <div class="sum-sub">87 DOWN · 13 PARCIAL</div>
+    </div>
+  </div>
+  
+  <div class="sec-title">🖥 Juniper MX — Capacidad de Equipo <span class="ts-badge">⏱ Saturday 07 de March 2026 — 21:20:28</span></div>
+  <div class="juniper-grid">
+    <div class="router-card">
+      <div class="router-hdr">
         <div>
-          <div class="equipo-name">HostMega</div>
-          <div class="equipo-host">10.41.0.53 &nbsp;·&nbsp; N/A &nbsp;·&nbsp; RE-S-X6-128G-K</div>
+          <div class="router-name">HOSTMEGA <span class="tag">10.41.0.53</span></div>
+          <div class="router-sub">N/A · RE-S-X6-128G-K</div>
         </div>
-        <div style="text-align:right;font-family:'Share Tech Mono',monospace;font-size:11px;color:#4a6070;line-height:1.8;">
-          <div><span class="live-dot"></span>RE0 MASTER</div>
-          <div>UPTIME: 35 days, 6 hours, 39</div>
-          <div>MUESTRA: 2026-03-06 08:02:46</div>
+        <div class="router-meta">
+          <div><span class="live-dot"></span>RE MASTER</div>
+          <div>UPTIME: 36 days, 19 hours, 56 minutes, 35 s</div>
         </div>
       </div>
-
-      <!-- GAUGES -->
       <div class="gauges-row">
-
-        <!-- CPU -->
-        <div class="gauge-panel">
-          <div class="panel-label">CPU — RE Master</div>
-          <div class="gauge-wrap">
-            
-      <svg class="gauge-svg" viewBox="0 0 160 90">
-        <defs>
-          <linearGradient id="grad_00ff88" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style="stop-color:#00ff88"/>
-            <stop offset="60%" style="stop-color:#ffd600"/>
-            <stop offset="100%" style="stop-color:#ff2d55"/>
-          </linearGradient>
-        </defs>
-        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#1a2d45" stroke-width="12" stroke-linecap="round"/>
-        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#00ff88" stroke-width="12" stroke-linecap="round"
-          stroke-dasharray="204" stroke-dashoffset="192"/>
-        <circle cx="80" cy="80" r="5" fill="#00ff88"/>
-        <text x="12" y="88" fill="#4a6070" font-size="9" font-family="monospace">0</text>
-        <text x="70" y="18" fill="#4a6070" font-size="9" font-family="monospace">50</text>
-        <text x="138" y="88" fill="#4a6070" font-size="9" font-family="monospace">100</text>
-      </svg>
-            <div class="gauge-value" style="color:#00ff88">6%</div>
-            <div class="gauge-unit">usado (94% idle)</div>
-            <div class="gauge-label">CPU Load</div>
-            <div class="gauge-status" style="background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.3)">✓ LIBRE</div>
-          </div>
+        <div class="gauge-box">
+          <div class="g-lbl">CPU — RE MASTER</div>
+          <svg width="80" height="50" viewBox="0 0 80 50"><path d="M10,45 A35,35 0 0,1 70,45" fill="none" stroke="#1a2d44" stroke-width="8" stroke-linecap="round"/><path d="M10,45 A35,35 0 0,1 70,45" fill="none" stroke="#00ff88" stroke-width="8" stroke-linecap="round" stroke-dasharray="4.4 105.6"/></svg>
+          <div class="g-val" style="color:#00ff88">4%</div>
+          <div class="g-unit">usado (96% idle)</div>
         </div>
-
-        <!-- MEMORIA -->
-        <div class="gauge-panel">
-          <div class="panel-label">RAM — 96 GB instalados</div>
-          <div class="gauge-wrap">
-            
-      <svg class="gauge-svg" viewBox="0 0 160 90">
-        <defs>
-          <linearGradient id="grad_00ff88" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style="stop-color:#00ff88"/>
-            <stop offset="60%" style="stop-color:#ffd600"/>
-            <stop offset="100%" style="stop-color:#ff2d55"/>
-          </linearGradient>
-        </defs>
-        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#1a2d45" stroke-width="12" stroke-linecap="round"/>
-        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#00ff88" stroke-width="12" stroke-linecap="round"
-          stroke-dasharray="204" stroke-dashoffset="198"/>
-        <circle cx="80" cy="80" r="5" fill="#00ff88"/>
-        <text x="12" y="88" fill="#4a6070" font-size="9" font-family="monospace">0</text>
-        <text x="70" y="18" fill="#4a6070" font-size="9" font-family="monospace">50</text>
-        <text x="138" y="88" fill="#4a6070" font-size="9" font-family="monospace">100</text>
-      </svg>
-            <div class="gauge-value" style="color:#00ff88">3%</div>
-            <div class="gauge-unit">~2 GB / 96 GB</div>
-            <div class="gauge-label">Memory Usage</div>
-            <div class="gauge-status" style="background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.3)">✓ SOBRADO</div>
-          </div>
+        <div class="gauge-box">
+          <div class="g-lbl">RAM — 96 GB</div>
+          <svg width="80" height="50" viewBox="0 0 80 50"><path d="M10,45 A35,35 0 0,1 70,45" fill="none" stroke="#1a2d44" stroke-width="8" stroke-linecap="round"/><path d="M10,45 A35,35 0 0,1 70,45" fill="none" stroke="#00ff88" stroke-width="8" stroke-linecap="round" stroke-dasharray="3.3 106.7"/></svg>
+          <div class="g-val" style="color:#00ff88">3%</div>
+          <div class="g-unit">2.9 GB / 96 GB</div>
         </div>
-
-        <!-- TEMPERATURA -->
-        <div class="gauge-panel">
-          <div class="panel-label">Temperatura</div>
-          <div class="gauge-wrap">
-            
-      <svg class="gauge-svg" viewBox="0 0 160 90">
-        <defs>
-          <linearGradient id="grad_00ff88" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style="stop-color:#00ff88"/>
-            <stop offset="60%" style="stop-color:#ffd600"/>
-            <stop offset="100%" style="stop-color:#ff2d55"/>
-          </linearGradient>
-        </defs>
-        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#1a2d45" stroke-width="12" stroke-linecap="round"/>
-        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#00ff88" stroke-width="12" stroke-linecap="round"
-          stroke-dasharray="204" stroke-dashoffset="76"/>
-        <circle cx="80" cy="80" r="5" fill="#00ff88"/>
-        <text x="12" y="88" fill="#4a6070" font-size="9" font-family="monospace">0</text>
-        <text x="70" y="18" fill="#4a6070" font-size="9" font-family="monospace">45°</text>
-        <text x="138" y="88" fill="#4a6070" font-size="9" font-family="monospace">90</text>
-      </svg>
-            <div class="gauge-value" style="color:#00ff88">51°C</div>
-            <div class="gauge-unit">CPU | Chasis: 34°C</div>
-            <div class="gauge-label">Temperatura</div>
-            <div class="gauge-status" style="background:rgba(255,214,0,0.1);color:#00ff88;border:1px solid rgba(255,214,0,0.3)">✓ NORMAL</div>
-          </div>
+        <div class="gauge-box">
+          <div class="g-lbl">TEMPERATURA</div>
+          <svg width="80" height="50" viewBox="0 0 80 50"><path d="M10,45 A35,35 0 0,1 70,45" fill="none" stroke="#1a2d44" stroke-width="8" stroke-linecap="round"/><path d="M10,45 A35,35 0 0,1 70,45" fill="none" stroke="#00ff88" stroke-width="8" stroke-linecap="round" stroke-dasharray="62.3 47.7"/></svg>
+          <div class="g-val" style="color:#00ff88">51°C</div>
+          <div class="g-unit">CPU · Chasis: 34°C</div>
         </div>
-
       </div>
-
-        <!-- CAPACITY INDEX + VEREDICTO -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-
-          <!-- Índice global -->
-          <div style="background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:6px;padding:16px;text-align:center;">
-            <div class="panel-label" style="margin-bottom:10px;">Índice de Capacidad Global</div>
-            <div style="font-family:'Share Tech Mono',monospace;font-size:48px;font-weight:bold;color:#00ff88;line-height:1;">0.2%</div>
-            <div style="font-size:11px;color:var(--dim);margin-top:4px;letter-spacing:1px;">DE CAPACIDAD EN USO</div>
-            <div style="margin:12px 0 5px;height:14px;border-radius:20px;background:linear-gradient(90deg,#00ff88,#ffd600,#ff8c00,#ff2d55);position:relative;border:1px solid var(--border);">
-              <div style="position:absolute;top:-3px;left:0.2%;width:10px;height:20px;background:#fff;border-radius:2px;box-shadow:0 0 8px #00ff88;transform:translateX(-50%);"></div>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);">
-              <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
-            </div>
-          </div>
-
-          <!-- Veredicto -->
-          <div style="background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:6px;padding:16px;display:flex;flex-direction:column;justify-content:center;">
-            <div class="panel-label" style="margin-bottom:8px;">Veredicto</div>
-            <div style="font-size:28px;margin-bottom:6px;">🟢</div>
-            <div style="font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:#00ff88;margin-bottom:6px;">Equipo Sobrado</div>
-            <div style="font-size:11px;color:var(--text);line-height:1.5;">Router operando con amplia capacidad libre. Bandwidth al 0.18% del total instalado.</div>
-          </div>
-
+      <div class="cap-row">
+        <div class="cap-idx">
+          <div class="g-lbl">ÍNDICE DE CAPACIDAD GLOBAL</div>
+          <div class="big-pct" style="color:#00ff88">0.122%</div>
+          <div class="cap-sub">DE CAPACIDAD EN USO</div>
+          <div class="scale-bar"><div class="scale-needle" style="left:0.12%"></div></div>
+          <div class="scale-lbl"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
         </div>
-
-      <!-- BANDWIDTH -->
+        <div class="verdict-box" style="background:rgba(0,255,136,.05);border-color:rgba(0,255,136,.2)">
+          <div class="v-meta">VEREDICTO</div>
+          <div style="font-size:26px;margin:2px 0">🟢</div>
+          <div class="v-title" style="color:#00ff88">EQUIPO SOBRADO</div>
+          <div class="v-desc">CPU 4% · RAM 3% · BW 0.122%. Sin riesgo.</div>
+        </div>
+      </div>
       <div class="bw-section">
-        <div class="panel-label" style="margin-bottom:12px;">Bandwidth — 32 puertos × 10 Gbps = 320 Gbps capacidad</div>
-
-        <div class="big-meter">
-          <div class="big-meter-header">
-            <div class="big-meter-title">↓ INPUT Total</div>
-            <div class="big-meter-pct" style="color:#00d4ff">563.3 Mbps &nbsp;<span style="font-size:13px;color:#4a6070">(0.176% cap.)</span></div>
-          </div>
-          <div class="big-meter-bar">
-            <div class="big-meter-fill" style="width:0.300%;background:linear-gradient(90deg,#003388,#00d4ff)"></div>
-          </div>
-        </div>
-
-        <div class="big-meter" style="margin-top:12px;">
-          <div class="big-meter-header">
-            <div class="big-meter-title">↑ OUTPUT Total</div>
-            <div class="big-meter-pct" style="color:#00ff88">572.2 Mbps &nbsp;<span style="font-size:13px;color:#4a6070">(0.179% cap.)</span></div>
-          </div>
-          <div class="big-meter-bar">
-            <div class="big-meter-fill" style="width:0.300%;background:linear-gradient(90deg,#003322,#00ff88)"></div>
-          </div>
-          <div class="big-meter-ticks">
-            <span>0</span><span>80 Gbps</span><span>160 Gbps</span><span>240 Gbps</span><span>320 Gbps</span>
-          </div>
-        </div>
-
-        <!-- Top interfaces -->
-        <div style="margin-top:16px;">
-          <div class="panel-label" style="margin-bottom:8px;">Top interfaces por tráfico</div>
-          
-        <div class="bw-row">
-          <div class="bw-label">#1 ↓ IN</div>
-          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:100%;background:linear-gradient(90deg,#003388,#00d4ff)"></div></div>
-          <div class="bw-value" style="color:#00d4ff">114.4 Mbps</div>
-        </div>
-        <div class="bw-row">
-          <div class="bw-label">#1 ↑ OUT</div>
-          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:22%;background:linear-gradient(90deg,#003322,#00ff88)"></div></div>
-          <div class="bw-value" style="color:#00ff88">24.7 Mbps</div>
-        </div>
-        <div class="bw-row">
-          <div class="bw-label">#2 ↓ IN</div>
-          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:67%;background:linear-gradient(90deg,#003388,#00d4ff)"></div></div>
-          <div class="bw-value" style="color:#00d4ff">76.3 Mbps</div>
-        </div>
-        <div class="bw-row">
-          <div class="bw-label">#2 ↑ OUT</div>
-          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:21%;background:linear-gradient(90deg,#003322,#00ff88)"></div></div>
-          <div class="bw-value" style="color:#00ff88">23.6 Mbps</div>
-        </div>
-        <div class="bw-row">
-          <div class="bw-label">#3 ↓ IN</div>
-          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:34%;background:linear-gradient(90deg,#003388,#00d4ff)"></div></div>
-          <div class="bw-value" style="color:#00d4ff">39.4 Mbps</div>
-        </div>
-        <div class="bw-row">
-          <div class="bw-label">#3 ↑ OUT</div>
-          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:3%;background:linear-gradient(90deg,#003322,#00ff88)"></div></div>
-          <div class="bw-value" style="color:#00ff88">3.1 Mbps</div>
-        </div>
-        </div>
-
-        <!-- Veredicto -->
-        <div class="verdict-box" style="background:rgba(0,255,136,0.05);border-color:rgba(0,255,136,0.25);margin-top:14px;">
-          <div class="verdict-icon">🟢</div>
-          <div>
-            <div class="verdict-title" style="color:#00ff88;">Equipo Sobrado</div>
-            <div class="verdict-desc">Router operando con amplia capacidad libre. Bandwidth al 0.18% del total instalado.</div>
-          </div>
-        </div>
+        <div class="bw-lbl">BANDWIDTH — 32 × 10 Gbps = 320 Gbps capacidad</div>
+        <div class="bw-row"><div class="bw-name">↓ INPUT</div>
+          <div class="bw-bar-w"><div class="bw-bar" style="width:0.1169%;background:linear-gradient(90deg,#004dff,#00d4ff)"></div></div>
+          <div class="bw-val">374.0 Mbps <span class="bw-dim">(0.117%)</span></div></div>
+        <div class="bw-row"><div class="bw-name">↑ OUTPUT</div>
+          <div class="bw-bar-w"><div class="bw-bar" style="width:0.1224%;background:linear-gradient(90deg,#00a851,#00ff88)"></div></div>
+          <div class="bw-val">391.7 Mbps <span class="bw-dim">(0.122%)</span></div></div>
+        <div class="bw-lbl" style="margin-top:10px">TOP INTERFACES POR TRÁFICO</div>
+        
+          <div class="bw-row"><div class="bw-name">#1 ↓ IN</div>
+            <div class="bw-bar-w"><div class="bw-bar" style="width:100.0%;background:linear-gradient(90deg,#004dff,#00d4ff)"></div></div>
+            <div class="bw-val">81.4 Mbps</div></div>
+          <div class="bw-row"><div class="bw-name">#1 ↑ OUT</div>
+            <div class="bw-bar-w"><div class="bw-bar" style="width:18.8%;background:linear-gradient(90deg,#00a851,#00ff88)"></div></div>
+            <div class="bw-val">15.3 Mbps</div></div>
+          <div class="bw-row"><div class="bw-name">#2 ↓ IN</div>
+            <div class="bw-bar-w"><div class="bw-bar" style="width:56.5%;background:linear-gradient(90deg,#004dff,#00d4ff)"></div></div>
+            <div class="bw-val">46.0 Mbps</div></div>
+          <div class="bw-row"><div class="bw-name">#2 ↑ OUT</div>
+            <div class="bw-bar-w"><div class="bw-bar" style="width:20.7%;background:linear-gradient(90deg,#00a851,#00ff88)"></div></div>
+            <div class="bw-val">16.8 Mbps</div></div>
+          <div class="bw-row"><div class="bw-name">#3 ↓ IN</div>
+            <div class="bw-bar-w"><div class="bw-bar" style="width:44.8%;background:linear-gradient(90deg,#004dff,#00d4ff)"></div></div>
+            <div class="bw-val">36.5 Mbps</div></div>
+          <div class="bw-row"><div class="bw-name">#3 ↑ OUT</div>
+            <div class="bw-bar-w"><div class="bw-bar" style="width:6.6%;background:linear-gradient(90deg,#00a851,#00ff88)"></div></div>
+            <div class="bw-val">5.4 Mbps</div></div>
       </div>
-
-      <!-- INFO SISTEMA -->
-      <div class="sys-info">
-        <div class="panel-label" style="margin-bottom:10px;">Sistema</div>
-        <div class="info-row"><div class="info-key">Modelo RE</div><div class="info-val">RE-S-X6-128G-K</div></div>
-        <div class="info-row"><div class="info-key">DRAM</div><div class="info-val">96 GB</div></div>
-        <div class="info-row"><div class="info-key">Puertos</div><div class="info-val">32 × 10 Gbps</div></div>
-        <div class="info-row"><div class="info-key">Capacidad</div><div class="info-val">320 Gbps</div></div>
-        <div class="info-row"><div class="info-key">JUNOS</div><div class="info-val">N/A</div></div>
-      </div>
-
     </div>
 
-    <div class="equipo-panel">
-      <!-- HEADER EQUIPO -->
-      <div class="equipo-header">
+    <div class="router-card">
+      <div class="router-hdr">
         <div>
-          <div class="equipo-name">HostTol</div>
-          <div class="equipo-host">10.150.96.36 &nbsp;·&nbsp; N/A &nbsp;·&nbsp; RE-S-X6-128G-K</div>
+          <div class="router-name">HOSTTOL <span class="tag">10.150.96.36</span></div>
+          <div class="router-sub">N/A · RE-S-X6-128G-K</div>
         </div>
-        <div style="text-align:right;font-family:'Share Tech Mono',monospace;font-size:11px;color:#4a6070;line-height:1.8;">
-          <div><span class="live-dot"></span>RE0 MASTER</div>
-          <div>UPTIME: 49 days, 3 hours, 11</div>
-          <div>MUESTRA: 2026-03-06 08:03:12</div>
+        <div class="router-meta">
+          <div><span class="live-dot"></span>RE MASTER</div>
+          <div>UPTIME: 50 days, 16 hours, 28 minutes, 27 s</div>
         </div>
       </div>
-
-      <!-- GAUGES -->
       <div class="gauges-row">
-
-        <!-- CPU -->
-        <div class="gauge-panel">
-          <div class="panel-label">CPU — RE Master</div>
-          <div class="gauge-wrap">
-            
-      <svg class="gauge-svg" viewBox="0 0 160 90">
-        <defs>
-          <linearGradient id="grad_00ff88" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style="stop-color:#00ff88"/>
-            <stop offset="60%" style="stop-color:#ffd600"/>
-            <stop offset="100%" style="stop-color:#ff2d55"/>
-          </linearGradient>
-        </defs>
-        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#1a2d45" stroke-width="12" stroke-linecap="round"/>
-        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#00ff88" stroke-width="12" stroke-linecap="round"
-          stroke-dasharray="204" stroke-dashoffset="194"/>
-        <circle cx="80" cy="80" r="5" fill="#00ff88"/>
-        <text x="12" y="88" fill="#4a6070" font-size="9" font-family="monospace">0</text>
-        <text x="70" y="18" fill="#4a6070" font-size="9" font-family="monospace">50</text>
-        <text x="138" y="88" fill="#4a6070" font-size="9" font-family="monospace">100</text>
-      </svg>
-            <div class="gauge-value" style="color:#00ff88">5%</div>
-            <div class="gauge-unit">usado (95% idle)</div>
-            <div class="gauge-label">CPU Load</div>
-            <div class="gauge-status" style="background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.3)">✓ LIBRE</div>
-          </div>
+        <div class="gauge-box">
+          <div class="g-lbl">CPU — RE MASTER</div>
+          <svg width="80" height="50" viewBox="0 0 80 50"><path d="M10,45 A35,35 0 0,1 70,45" fill="none" stroke="#1a2d44" stroke-width="8" stroke-linecap="round"/><path d="M10,45 A35,35 0 0,1 70,45" fill="none" stroke="#00ff88" stroke-width="8" stroke-linecap="round" stroke-dasharray="4.4 105.6"/></svg>
+          <div class="g-val" style="color:#00ff88">4%</div>
+          <div class="g-unit">usado (96% idle)</div>
         </div>
-
-        <!-- MEMORIA -->
-        <div class="gauge-panel">
-          <div class="panel-label">RAM — 96 GB instalados</div>
-          <div class="gauge-wrap">
-            
-      <svg class="gauge-svg" viewBox="0 0 160 90">
-        <defs>
-          <linearGradient id="grad_00ff88" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style="stop-color:#00ff88"/>
-            <stop offset="60%" style="stop-color:#ffd600"/>
-            <stop offset="100%" style="stop-color:#ff2d55"/>
-          </linearGradient>
-        </defs>
-        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#1a2d45" stroke-width="12" stroke-linecap="round"/>
-        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#00ff88" stroke-width="12" stroke-linecap="round"
-          stroke-dasharray="204" stroke-dashoffset="198"/>
-        <circle cx="80" cy="80" r="5" fill="#00ff88"/>
-        <text x="12" y="88" fill="#4a6070" font-size="9" font-family="monospace">0</text>
-        <text x="70" y="18" fill="#4a6070" font-size="9" font-family="monospace">50</text>
-        <text x="138" y="88" fill="#4a6070" font-size="9" font-family="monospace">100</text>
-      </svg>
-            <div class="gauge-value" style="color:#00ff88">3%</div>
-            <div class="gauge-unit">~2 GB / 96 GB</div>
-            <div class="gauge-label">Memory Usage</div>
-            <div class="gauge-status" style="background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.3)">✓ SOBRADO</div>
-          </div>
+        <div class="gauge-box">
+          <div class="g-lbl">RAM — 96 GB</div>
+          <svg width="80" height="50" viewBox="0 0 80 50"><path d="M10,45 A35,35 0 0,1 70,45" fill="none" stroke="#1a2d44" stroke-width="8" stroke-linecap="round"/><path d="M10,45 A35,35 0 0,1 70,45" fill="none" stroke="#00ff88" stroke-width="8" stroke-linecap="round" stroke-dasharray="3.3 106.7"/></svg>
+          <div class="g-val" style="color:#00ff88">3%</div>
+          <div class="g-unit">2.9 GB / 96 GB</div>
         </div>
-
-        <!-- TEMPERATURA -->
-        <div class="gauge-panel">
-          <div class="panel-label">Temperatura</div>
-          <div class="gauge-wrap">
-            
-      <svg class="gauge-svg" viewBox="0 0 160 90">
-        <defs>
-          <linearGradient id="grad_ffd600" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style="stop-color:#00ff88"/>
-            <stop offset="60%" style="stop-color:#ffd600"/>
-            <stop offset="100%" style="stop-color:#ff2d55"/>
-          </linearGradient>
-        </defs>
-        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#1a2d45" stroke-width="12" stroke-linecap="round"/>
-        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#ffd600" stroke-width="12" stroke-linecap="round"
-          stroke-dasharray="204" stroke-dashoffset="65"/>
-        <circle cx="80" cy="80" r="5" fill="#ffd600"/>
-        <text x="12" y="88" fill="#4a6070" font-size="9" font-family="monospace">0</text>
-        <text x="70" y="18" fill="#4a6070" font-size="9" font-family="monospace">45°</text>
-        <text x="138" y="88" fill="#4a6070" font-size="9" font-family="monospace">90</text>
-      </svg>
-            <div class="gauge-value" style="color:#ffd600">55°C</div>
-            <div class="gauge-unit">CPU | Chasis: 37°C</div>
-            <div class="gauge-label">Temperatura</div>
-            <div class="gauge-status" style="background:rgba(255,214,0,0.1);color:#ffd600;border:1px solid rgba(255,214,0,0.3)">✓ NORMAL</div>
-          </div>
+        <div class="gauge-box">
+          <div class="g-lbl">TEMPERATURA</div>
+          <svg width="80" height="50" viewBox="0 0 80 50"><path d="M10,45 A35,35 0 0,1 70,45" fill="none" stroke="#1a2d44" stroke-width="8" stroke-linecap="round"/><path d="M10,45 A35,35 0 0,1 70,45" fill="none" stroke="#ffd600" stroke-width="8" stroke-linecap="round" stroke-dasharray="67.2 42.8"/></svg>
+          <div class="g-val" style="color:#ffd600">55°C</div>
+          <div class="g-unit">CPU · Chasis: 36°C</div>
         </div>
-
       </div>
-
-        <!-- CAPACITY INDEX + VEREDICTO -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-
-          <!-- Índice global -->
-          <div style="background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:6px;padding:16px;text-align:center;">
-            <div class="panel-label" style="margin-bottom:10px;">Índice de Capacidad Global</div>
-            <div style="font-family:'Share Tech Mono',monospace;font-size:48px;font-weight:bold;color:#00ff88;line-height:1;">0.3%</div>
-            <div style="font-size:11px;color:var(--dim);margin-top:4px;letter-spacing:1px;">DE CAPACIDAD EN USO</div>
-            <div style="margin:12px 0 5px;height:14px;border-radius:20px;background:linear-gradient(90deg,#00ff88,#ffd600,#ff8c00,#ff2d55);position:relative;border:1px solid var(--border);">
-              <div style="position:absolute;top:-3px;left:0.3%;width:10px;height:20px;background:#fff;border-radius:2px;box-shadow:0 0 8px #00ff88;transform:translateX(-50%);"></div>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);">
-              <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
-            </div>
-          </div>
-
-          <!-- Veredicto -->
-          <div style="background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:6px;padding:16px;display:flex;flex-direction:column;justify-content:center;">
-            <div class="panel-label" style="margin-bottom:8px;">Veredicto</div>
-            <div style="font-size:28px;margin-bottom:6px;">🟢</div>
-            <div style="font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:#00ff88;margin-bottom:6px;">Equipo Sobrado</div>
-            <div style="font-size:11px;color:var(--text);line-height:1.5;">Router operando con amplia capacidad libre. Bandwidth al 0.28% del total instalado.</div>
-          </div>
-
+      <div class="cap-row">
+        <div class="cap-idx">
+          <div class="g-lbl">ÍNDICE DE CAPACIDAD GLOBAL</div>
+          <div class="big-pct" style="color:#00ff88">0.273%</div>
+          <div class="cap-sub">DE CAPACIDAD EN USO</div>
+          <div class="scale-bar"><div class="scale-needle" style="left:0.27%"></div></div>
+          <div class="scale-lbl"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
         </div>
-
-      <!-- BANDWIDTH -->
+        <div class="verdict-box" style="background:rgba(0,255,136,.05);border-color:rgba(0,255,136,.2)">
+          <div class="v-meta">VEREDICTO</div>
+          <div style="font-size:26px;margin:2px 0">🟢</div>
+          <div class="v-title" style="color:#00ff88">EQUIPO SOBRADO</div>
+          <div class="v-desc">CPU 4% · RAM 3% · BW 0.273%. Sin riesgo.</div>
+        </div>
+      </div>
       <div class="bw-section">
-        <div class="panel-label" style="margin-bottom:12px;">Bandwidth — 33 puertos × 10 Gbps = 330 Gbps capacidad</div>
-
-        <div class="big-meter">
-          <div class="big-meter-header">
-            <div class="big-meter-title">↓ INPUT Total</div>
-            <div class="big-meter-pct" style="color:#00d4ff">919.7 Mbps &nbsp;<span style="font-size:13px;color:#4a6070">(0.279% cap.)</span></div>
-          </div>
-          <div class="big-meter-bar">
-            <div class="big-meter-fill" style="width:0.300%;background:linear-gradient(90deg,#003388,#00d4ff)"></div>
-          </div>
-        </div>
-
-        <div class="big-meter" style="margin-top:12px;">
-          <div class="big-meter-header">
-            <div class="big-meter-title">↑ OUTPUT Total</div>
-            <div class="big-meter-pct" style="color:#00ff88">907.1 Mbps &nbsp;<span style="font-size:13px;color:#4a6070">(0.275% cap.)</span></div>
-          </div>
-          <div class="big-meter-bar">
-            <div class="big-meter-fill" style="width:0.300%;background:linear-gradient(90deg,#003322,#00ff88)"></div>
-          </div>
-          <div class="big-meter-ticks">
-            <span>0</span><span>82 Gbps</span><span>165 Gbps</span><span>248 Gbps</span><span>330 Gbps</span>
-          </div>
-        </div>
-
-        <!-- Top interfaces -->
-        <div style="margin-top:16px;">
-          <div class="panel-label" style="margin-bottom:8px;">Top interfaces por tráfico</div>
-          
-        <div class="bw-row">
-          <div class="bw-label">#1 ↓ IN</div>
-          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:100%;background:linear-gradient(90deg,#003388,#00d4ff)"></div></div>
-          <div class="bw-value" style="color:#00d4ff">155.7 Mbps</div>
-        </div>
-        <div class="bw-row">
-          <div class="bw-label">#1 ↑ OUT</div>
-          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:66%;background:linear-gradient(90deg,#003322,#00ff88)"></div></div>
-          <div class="bw-value" style="color:#00ff88">103.2 Mbps</div>
-        </div>
-        <div class="bw-row">
-          <div class="bw-label">#2 ↓ IN</div>
-          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:92%;background:linear-gradient(90deg,#003388,#00d4ff)"></div></div>
-          <div class="bw-value" style="color:#00d4ff">143.6 Mbps</div>
-        </div>
-        <div class="bw-row">
-          <div class="bw-label">#2 ↑ OUT</div>
-          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:64%;background:linear-gradient(90deg,#003322,#00ff88)"></div></div>
-          <div class="bw-value" style="color:#00ff88">100.0 Mbps</div>
-        </div>
-        <div class="bw-row">
-          <div class="bw-label">#3 ↓ IN</div>
-          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:53%;background:linear-gradient(90deg,#003388,#00d4ff)"></div></div>
-          <div class="bw-value" style="color:#00d4ff">82.3 Mbps</div>
-        </div>
-        <div class="bw-row">
-          <div class="bw-label">#3 ↑ OUT</div>
-          <div class="bw-bar-bg"><div class="bw-bar-fill" style="width:26%;background:linear-gradient(90deg,#003322,#00ff88)"></div></div>
-          <div class="bw-value" style="color:#00ff88">40.6 Mbps</div>
-        </div>
-        </div>
-
-        <!-- Veredicto -->
-        <div class="verdict-box" style="background:rgba(0,255,136,0.05);border-color:rgba(0,255,136,0.25);margin-top:14px;">
-          <div class="verdict-icon">🟢</div>
-          <div>
-            <div class="verdict-title" style="color:#00ff88;">Equipo Sobrado</div>
-            <div class="verdict-desc">Router operando con amplia capacidad libre. Bandwidth al 0.28% del total instalado.</div>
-          </div>
-        </div>
+        <div class="bw-lbl">BANDWIDTH — 33 × 10 Gbps = 330 Gbps capacidad</div>
+        <div class="bw-row"><div class="bw-name">↓ INPUT</div>
+          <div class="bw-bar-w"><div class="bw-bar" style="width:0.2729%;background:linear-gradient(90deg,#004dff,#00d4ff)"></div></div>
+          <div class="bw-val">900.6 Mbps <span class="bw-dim">(0.273%)</span></div></div>
+        <div class="bw-row"><div class="bw-name">↑ OUTPUT</div>
+          <div class="bw-bar-w"><div class="bw-bar" style="width:0.2411%;background:linear-gradient(90deg,#00a851,#00ff88)"></div></div>
+          <div class="bw-val">795.6 Mbps <span class="bw-dim">(0.241%)</span></div></div>
+        <div class="bw-lbl" style="margin-top:10px">TOP INTERFACES POR TRÁFICO</div>
+        
+          <div class="bw-row"><div class="bw-name">#1 ↓ IN</div>
+            <div class="bw-bar-w"><div class="bw-bar" style="width:100.0%;background:linear-gradient(90deg,#004dff,#00d4ff)"></div></div>
+            <div class="bw-val">190.6 Mbps</div></div>
+          <div class="bw-row"><div class="bw-name">#1 ↑ OUT</div>
+            <div class="bw-bar-w"><div class="bw-bar" style="width:37.8%;background:linear-gradient(90deg,#00a851,#00ff88)"></div></div>
+            <div class="bw-val">72.1 Mbps</div></div>
+          <div class="bw-row"><div class="bw-name">#2 ↓ IN</div>
+            <div class="bw-bar-w"><div class="bw-bar" style="width:97.4%;background:linear-gradient(90deg,#004dff,#00d4ff)"></div></div>
+            <div class="bw-val">185.7 Mbps</div></div>
+          <div class="bw-row"><div class="bw-name">#2 ↑ OUT</div>
+            <div class="bw-bar-w"><div class="bw-bar" style="width:39.6%;background:linear-gradient(90deg,#00a851,#00ff88)"></div></div>
+            <div class="bw-val">75.5 Mbps</div></div>
+          <div class="bw-row"><div class="bw-name">#3 ↓ IN</div>
+            <div class="bw-bar-w"><div class="bw-bar" style="width:31.2%;background:linear-gradient(90deg,#004dff,#00d4ff)"></div></div>
+            <div class="bw-val">59.5 Mbps</div></div>
+          <div class="bw-row"><div class="bw-name">#3 ↑ OUT</div>
+            <div class="bw-bar-w"><div class="bw-bar" style="width:15.9%;background:linear-gradient(90deg,#00a851,#00ff88)"></div></div>
+            <div class="bw-val">30.2 Mbps</div></div>
       </div>
-
-      <!-- INFO SISTEMA -->
-      <div class="sys-info">
-        <div class="panel-label" style="margin-bottom:10px;">Sistema</div>
-        <div class="info-row"><div class="info-key">Modelo RE</div><div class="info-val">RE-S-X6-128G-K</div></div>
-        <div class="info-row"><div class="info-key">DRAM</div><div class="info-val">96 GB</div></div>
-        <div class="info-row"><div class="info-key">Puertos</div><div class="info-val">33 × 10 Gbps</div></div>
-        <div class="info-row"><div class="info-key">Capacidad</div><div class="info-val">330 Gbps</div></div>
-        <div class="info-row"><div class="info-key">JUNOS</div><div class="info-val">N/A</div></div>
+    </div></div>
+  
+  <div class="sec-title">🔒 VPNs L2L — Cisco ASA 3G <span class="ts-badge">⏱ Saturday 07 de March 2026 — 21:38:28</span></div>
+  <div class="vpn-card" style="border-top:2px solid var(--green);margin-bottom:18px">
+    <div class="vpn-hdr">
+      <div class="vpn-title" style="color:var(--green)">🔒 CISCO ASA 3G
+        <span class="vpn-sub">10.41.0.242 · CTX VPN</span>
       </div>
-
+      <div class="stats-row">
+        <div class="stat"><div class="stat-val" style="color:var(--green)">58</div><div class="stat-lbl">UP</div></div>
+        <div class="stat"><div class="stat-val" style="color:var(--red)">3</div><div class="stat-lbl">DOWN</div></div>
+        <div class="stat"><div class="stat-val">61</div><div class="stat-lbl">TOTAL</div></div>
+      </div>
     </div>
+    <div class="donut-row">
+      <div class="donut-wrap">
+        <svg width="100" height="100" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="35" fill="none" stroke="#1a2d44" stroke-width="12"/>
+          <circle cx="50" cy="50" r="35" fill="none" stroke="#00ff88" stroke-width="12"
+                  stroke-dasharray="209 11" stroke-dashoffset="55" stroke-linecap="round"/>
+          <circle cx="50" cy="50" r="35" fill="none" stroke="#ff2d55" stroke-width="12"
+                  stroke-dasharray="11 209" stroke-dashoffset="-154" stroke-linecap="round"/>
+        </svg>
+        <div class="donut-center">
+          <div class="donut-pct" style="color:var(--green)">95%</div>
+          <div class="donut-lbl">UP</div>
+        </div>
+      </div>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div><span>UP</span>
+          <div class="leg-bar-w"><div class="leg-bar" style="width:95%;background:var(--green)"></div></div>
+          <div class="leg-val">58</div></div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div><span>DOWN</span>
+          <div class="leg-bar-w"><div class="leg-bar" style="width:5%;background:var(--red)"></div></div>
+          <div class="leg-val">3</div></div>
+      </div>
+    </div>
+    <div class="tabs-wrap">
+      <div class="tabs">
+        <div class="tab active" onclick="sw(this,'c-down')">🔴 DOWN (3)</div>
+        <div class="tab" onclick="sw(this,'c-all')">📋 TODOS (61)</div>
+      </div>
+      <div id="c-down" class="tab-body active">
+        <div class="peer-list">
+          <div class="peer-hdr"><span></span><span>CLIENTE</span><span>IP PEER</span><span>EST</span></div>
+          
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--red)"></div>
+          <div class="peer-name">Altan_redes</div>
+          <div class="peer-ip">192.141.246.128</div>
+          <div class="badge badge-down">DOWN</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--red)"></div>
+          <div class="peer-name">FGR_2</div>
+          <div class="peer-ip">201.144.242.178</div>
+          <div class="badge badge-down">DOWN</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--red)"></div>
+          <div class="peer-name">Idemia-01</div>
+          <div class="peer-ip">145.239.168.75</div>
+          <div class="badge badge-down">DOWN</div></div>
+        </div>
+      </div>
+      <div id="c-all" class="tab-body">
+        <div class="peer-list">
+          <div class="peer-hdr"><span></span><span>CLIENTE</span><span>IP PEER</span><span>EST</span></div>
+          
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Altan_redes</div>
+          <div class="peer-ip">192.141.244.128</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--red)"></div>
+          <div class="peer-name">Altan_redes</div>
+          <div class="peer-ip">192.141.246.128</div>
+          <div class="badge badge-down">DOWN</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">amdocs-noprd</div>
+          <div class="peer-ip">20.93.114.180</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">amdocs-prd</div>
+          <div class="peer-ip">20.123.72.12</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">ATT-Nokia_VoLTE</div>
+          <div class="peer-ip">93.183.9.188</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Axtel</div>
+          <div class="peer-ip">148.243.190.28</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">CBE1-GOBMX</div>
+          <div class="peer-ip">187.218.8.2</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">COEFICIENTE3</div>
+          <div class="peer-ip">192.141.125.87</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Comunicalo</div>
+          <div class="peer-ip">51.222.128.161</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">ConceptoMovilInt</div>
+          <div class="peer-ip">129.213.192.125</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Connect_Telecomm</div>
+          <div class="peer-ip">158.69.37.58</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Diginovtec</div>
+          <div class="peer-ip">3.210.71.240</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">FGR</div>
+          <div class="peer-ip">187.217.51.130</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--red)"></div>
+          <div class="peer-name">FGR_2</div>
+          <div class="peer-ip">201.144.242.178</div>
+          <div class="badge badge-down">DOWN</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">flynode</div>
+          <div class="peer-ip">192.64.205.37</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Gazeti-01</div>
+          <div class="peer-ip">64.250.120.226</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">geneva</div>
+          <div class="peer-ip">185.46.91.212</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Google_1</div>
+          <div class="peer-ip">35.205.244.156</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Google_2</div>
+          <div class="peer-ip">35.193.83.205</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Google_3</div>
+          <div class="peer-ip">35.232.181.27</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--red)"></div>
+          <div class="peer-name">Idemia-01</div>
+          <div class="peer-ip">145.239.168.75</div>
+          <div class="badge badge-down">DOWN</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Ikusi-01</div>
+          <div class="peer-ip">170.247.176.192</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">INBTEL01</div>
+          <div class="peer-ip">45.175.232.9</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">infobip_1</div>
+          <div class="peer-ip">185.255.9.4</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">infobip_2</div>
+          <div class="peer-ip">185.255.11.4</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">izzi</div>
+          <div class="peer-ip">189.204.254.84</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">JAPI</div>
+          <div class="peer-ip">54.177.149.56</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">L2L_VPN_DIRECTO</div>
+          <div class="peer-ip">170.79.127.6</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">maxcom</div>
+          <div class="peer-ip">201.157.127.129</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">MCMTelecom</div>
+          <div class="peer-ip">201.149.78.22</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">MEGAMX</div>
+          <div class="peer-ip">201.132.19.170</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Nuxiba</div>
+          <div class="peer-ip">8.242.68.2</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">orquestia</div>
+          <div class="peer-ip">119.8.10.194</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">OXIOMobile</div>
+          <div class="peer-ip">35.153.35.229</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">ServNET</div>
+          <div class="peer-ip">201.150.35.7</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">SINCH</div>
+          <div class="peer-ip">63.236.51.33</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">single_digits_1</div>
+          <div class="peer-ip">3.219.172.163</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">smcs_openip</div>
+          <div class="peer-ip">201.150.33.82</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">sms_robot</div>
+          <div class="peer-ip">201.150.33.83</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Spark-01</div>
+          <div class="peer-ip">216.238.71.64</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">SparkTelecom</div>
+          <div class="peer-ip">64.250.122.113</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Spektra</div>
+          <div class="peer-ip">64.250.120.232</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Spirent</div>
+          <div class="peer-ip">50.204.246.58</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">SyniChicago</div>
+          <div class="peer-ip">173.209.200.20</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">SyniDallas</div>
+          <div class="peer-ip">173.209.196.20</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">syniverse_chicago</div>
+          <div class="peer-ip">173.209.205.20</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">syniverse_dallas</div>
+          <div class="peer-ip">173.209.197.20</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Telcel</div>
+          <div class="peer-ip">200.95.161.15</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Telecom_Comtech</div>
+          <div class="peer-ip">216.221.136.39</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Telecommerce</div>
+          <div class="peer-ip">45.180.235.46</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Telecommerce02</div>
+          <div class="peer-ip">45.180.232.89</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">TELECOMSYS_aclv2</div>
+          <div class="peer-ip">216.221.128.39</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">TIMWE</div>
+          <div class="peer-ip">185.127.160.32</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Tsaay</div>
+          <div class="peer-ip">44.217.169.8</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">VADSA</div>
+          <div class="peer-ip">64.250.121.225</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Viavi</div>
+          <div class="peer-ip">157.234.214.7</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">VINOC</div>
+          <div class="peer-ip">35.202.67.143</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">VPN-VIVATELECOM</div>
+          <div class="peer-ip">216.238.89.185</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">Warado</div>
+          <div class="peer-ip">139.162.218.41</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">zorya-03</div>
+          <div class="peer-ip">38.77.76.115</div>
+          <div class="badge badge-up">UP</div></div>
+        <div class="peer-row">
+          <div class="peer-dot" style="background:var(--green)"></div>
+          <div class="peer-name">zurich</div>
+          <div class="peer-ip">185.46.90.212</div>
+          <div class="badge badge-up">UP</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="sec-title">🌐 VPNs L2L — Juniper IoT/APN <span class="ts-badge">⏱ Saturday 07 de March 2026 — 21:54:49</span></div>
+  <div class="vpn-card" style="border-top:2px solid var(--accent);margin-bottom:18px">
+    <div class="vpn-hdr">
+      <div class="vpn-title" style="color:var(--accent)">🌐 JUNIPER VPN IoT
+        <span class="vpn-sub">HostMega · HostTol</span>
+      </div>
+      <div class="stats-row">
+        <div class="stat"><div class="stat-val" style="color:var(--green)">10</div><div class="stat-lbl">VPN UP</div></div>
+        <div class="stat"><div class="stat-val" style="color:var(--red)">6</div><div class="stat-lbl">VPN DWN</div></div>
+        <div class="stat"><div class="stat-val" style="color:var(--accent)">19</div><div class="stat-lbl">BGP OK</div></div>
+        <div class="stat"><div class="stat-val" style="color:var(--orange)">0</div><div class="stat-lbl">BGP S/R</div></div>
+        <div class="stat"><div class="stat-val">35</div><div class="stat-lbl">TOTAL</div></div>
+      </div>
+    </div>
+    <div class="donut-row">
+      <div class="donut-wrap">
+        <svg width="100" height="100" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="35" fill="none" stroke="#1a2d44" stroke-width="12"/>
+          <circle cx="50" cy="50" r="35" fill="none" stroke="#00ff88" stroke-width="12"
+                  stroke-dasharray="63 157" stroke-dashoffset="55" stroke-linecap="round"/>
+          <circle cx="50" cy="50" r="35" fill="none" stroke="#ff2d55" stroke-width="12"
+                  stroke-dasharray="38 182" stroke-dashoffset="-8" stroke-linecap="round"/>
+          <circle cx="50" cy="50" r="35" fill="none" stroke="#ff8c00" stroke-width="12"
+                  stroke-dasharray="0 220" stroke-dashoffset="-46" stroke-linecap="round"/>
+        </svg>
+        <div class="donut-center">
+          <div class="donut-pct" style="color:var(--accent)">29%</div>
+          <div class="donut-lbl">UP</div>
+        </div>
+      </div>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div><span>VPN UP</span>
+          <div class="leg-bar-w"><div class="leg-bar" style="width:29%;background:var(--green)"></div></div>
+          <div class="leg-val">10</div></div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div><span>VPN DOWN</span>
+          <div class="leg-bar-w"><div class="leg-bar" style="width:17%;background:var(--red)"></div></div>
+          <div class="leg-val">6</div></div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--accent)"></div><span>BGP c/rutas</span>
+          <div class="leg-bar-w"><div class="leg-bar" style="width:54%;background:var(--accent)"></div></div>
+          <div class="leg-val">19</div></div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--orange)"></div><span>BGP s/rutas</span>
+          <div class="leg-bar-w"><div class="leg-bar" style="width:0%;background:var(--orange)"></div></div>
+          <div class="leg-val">0</div></div>
+      </div>
+    </div>
+    <div class="tabs-wrap">
+      <div class="tabs">
+        <div class="tab active" onclick="sw(this,'jv-alertas')">⚠️ ALERTAS (6)</div>
+        <div class="tab" onclick="sw(this,'jv-all')">📋 TODOS (35)</div>
+      </div>
+      <div id="jv-alertas" class="tab-body active">
+        <div class="peer-list">
+          <div class="peer-hdr"><span></span><span>CLIENTE</span><span>IP(s)</span><span>EST</span></div>
+          <div class="peer-row"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">encontrack.iot.attmex.mx</div><div class="peer-ip">189.198.156.142, 208.122.223.22</div><div class="badge badge-down">DOWN</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">energetika.iot.attmex.mx</div><div class="peer-ip">18.219.249.255, 3.18.123.59</div><div class="badge badge-down">DOWN</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">axtelort.iot.attmex.mx</div><div class="peer-ip">189.206.176.34</div><div class="badge badge-down">DOWN</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">citi.iot.attmex.mx</div><div class="peer-ip">189.254.120.54</div><div class="badge badge-down">DOWN</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">medidores079.iot.attmex.mx</div><div class="peer-ip">35.166.115.207</div><div class="badge badge-down">DOWN</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">cantilever.iot.attmex.mx</div><div class="peer-ip">52.226.216.214, 159.16.18.6</div><div class="badge badge-down">DOWN</div></div>
+        </div>
+      </div>
+      <div id="jv-all" class="tab-body">
+        <div class="peer-list">
+          <div class="peer-hdr"><span></span><span>CLIENTE</span><span>IP(s)</span><span>EST</span></div>
+          <div class="peer-row"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">jmstetrolebus.iot.attmex.mx</div><div class="peer-ip">187.245.95.138</div><div class="badge badge-up">VPN UP</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">softel.iot.attmex.mx</div><div class="peer-ip">189.206.34.194, 187.249.139.203</div><div class="badge badge-up">VPN UP</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">axtelbco.iot.attmex.mx</div><div class="peer-ip">200.76.27.12</div><div class="badge badge-up">VPN UP</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">inmosat.iot.attmex.mx</div><div class="peer-ip">201.131.72.2</div><div class="badge badge-up">VPN UP</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">totalplaybx.iot.attmex.mx</div><div class="peer-ip">187.251.150.18, 187.188.252.138</div><div class="badge badge-up">VPN UP</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">sapal.iot.attmex.mx</div><div class="peer-ip">148.223.118.250</div><div class="badge badge-up">VPN UP</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">orkantek.iot.attmex.mx</div><div class="peer-ip">13.58.187.182, 3.18.120.6</div><div class="badge badge-up">VPN UP</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">aos.iot.attmex.mx</div><div class="peer-ip">54.190.208.68</div><div class="badge badge-up">VPN UP</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">embsot.iot.attmex.mx</div><div class="peer-ip">3.215.19.140</div><div class="badge badge-up">VPN UP</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">hyundai.iot.attmex.mx</div><div class="peer-ip">78.12.195.212, 78.12.124.0</div><div class="badge badge-up">VPN UP</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">encontrack.iot.attmex.mx</div><div class="peer-ip">189.198.156.142, 208.122.223.22</div><div class="badge badge-down">DOWN</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">energetika.iot.attmex.mx</div><div class="peer-ip">18.219.249.255, 3.18.123.59</div><div class="badge badge-down">DOWN</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">axtelort.iot.attmex.mx</div><div class="peer-ip">189.206.176.34</div><div class="badge badge-down">DOWN</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">citi.iot.attmex.mx</div><div class="peer-ip">189.254.120.54</div><div class="badge badge-down">DOWN</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">medidores079.iot.attmex.mx</div><div class="peer-ip">35.166.115.207</div><div class="badge badge-down">DOWN</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">cantilever.iot.attmex.mx</div><div class="peer-ip">52.226.216.214, 159.16.18.6</div><div class="badge badge-down">DOWN</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--accent)"></div><div class="peer-name">apnvpntest1.iot.attmex.mx</div><div class="peer-ip">—</div><div class="badge badge-up">BGP 9rt</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--accent)"></div><div class="peer-name">apnvpntest2.iot.attmex.mx</div><div class="peer-ip">—</div><div class="badge badge-up">BGP 6rt</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--accent)"></div><div class="peer-name">apnvpntest3.iot.attmex.mx</div><div class="peer-ip">—</div><div class="badge badge-up">BGP 7rt</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--accent)"></div><div class="peer-name">ott.iot.attmex.mx</div><div class="peer-ip">—</div><div class="badge badge-up">BGP 13rt</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--accent)"></div><div class="peer-name">nuveaxtel.iot.attmex.mx</div><div class="peer-ip">—</div><div class="badge badge-up">BGP 8rt</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--accent)"></div><div class="peer-name">skytex.iot.attmex.mx</div><div class="peer-ip">—</div><div class="badge badge-up">BGP 9rt</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--accent)"></div><div class="peer-name">axtel-walmart.iot.attmex.mx</div><div class="peer-ip">—</div><div class="badge badge-up">BGP 6rt</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--accent)"></div><div class="peer-name">firstdata.iot.attmex.mx</div><div class="peer-ip">—</div><div class="badge badge-up">BGP 8rt</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--accent)"></div><div class="peer-name">netpay.iot.attmex.mx</div><div class="peer-ip">—</div><div class="badge badge-up">BGP 11rt</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--accent)"></div><div class="peer-name">yolopago.iot.attmex.mx</div><div class="peer-ip">—</div><div class="badge badge-up">BGP 8rt</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--accent)"></div><div class="peer-name">comnet.iot.attmex.mx</div><div class="peer-ip">—</div><div class="badge badge-up">BGP 8rt</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--accent)"></div><div class="peer-name">gt.iot.attmex.mx</div><div class="peer-ip">—</div><div class="badge badge-up">BGP 9rt</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--accent)"></div><div class="peer-name">mercadopagosmart.iot.attmex.mx</div><div class="peer-ip">—</div><div class="badge badge-up">BGP 16rt</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--accent)"></div><div class="peer-name">walmart-2.iot.attmex.mx</div><div class="peer-ip">—</div><div class="badge badge-up">BGP 6rt</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--accent)"></div><div class="peer-name">execon.iot.attmex.mx</div><div class="peer-ip">—</div><div class="badge badge-up">BGP 8rt</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--accent)"></div><div class="peer-name">energiaslimpias.iot.attmex.mx</div><div class="peer-ip">—</div><div class="badge badge-up">BGP 8rt</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--accent)"></div><div class="peer-name">sonda.iot.attmex.mx</div><div class="peer-ip">—</div><div class="badge badge-up">BGP 8rt</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--accent)"></div><div class="peer-name">yunbai.iot.attmex.mx</div><div class="peer-ip">—</div><div class="badge badge-up">BGP 10rt</div></div><div class="peer-row"><div class="peer-dot" style="background:var(--accent)"></div><div class="peer-name">bbva.iot.attmex.mx</div><div class="peer-ip">—</div><div class="badge badge-up">BGP 8rt</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="sec-title">🛡 VPNs L2L — Fortinet TLA <span class="ts-badge">⏱ Saturday 07 de March 2026 — 22:48:30</span></div>
+  <div class="forti-card">
+    <div class="vpn-hdr" style="border-bottom:2px solid var(--yellow)">
+      <div class="vpn-title" style="color:var(--yellow)">🛡 FORTI-L2L-TLA-A
+        <span class="vpn-sub">10.103.240.23 · VDOM VPN</span>
+      </div>
+      <div class="stats-row">
+        <div class="stat"><div class="stat-val" style="color:var(--green)">58</div><div class="stat-lbl">UP</div></div>
+        <div class="stat"><div class="stat-val" style="color:var(--yellow)">13</div><div class="stat-lbl">PARCIAL</div></div>
+        <div class="stat"><div class="stat-val" style="color:var(--red)">84</div><div class="stat-lbl">DOWN</div></div>
+        <div class="stat"><div class="stat-val">155</div><div class="stat-lbl">TOTAL</div></div>
+      </div>
+    </div>
+    <div class="forti-body">
+      <div class="forti-donut">
+        <div class="donut-wrap" style="margin-bottom:12px">
+          <svg width="110" height="110" viewBox="0 0 110 110">
+            <circle cx="55" cy="55" r="42" fill="none" stroke="#1a2d44" stroke-width="14"/>
+            <circle cx="55" cy="55" r="42" fill="none" stroke="#00ff88" stroke-width="14"
+                    stroke-dasharray="82 138" stroke-dashoffset="66" stroke-linecap="round"/>
+            <circle cx="55" cy="55" r="42" fill="none" stroke="#ffd600" stroke-width="14"
+                    stroke-dasharray="18 202" stroke-dashoffset="-16" stroke-linecap="round"/>
+            <circle cx="55" cy="55" r="42" fill="none" stroke="#ff2d55" stroke-width="14"
+                    stroke-dasharray="120 100" stroke-dashoffset="-34" stroke-linecap="round"/>
+          </svg>
+          <div class="donut-center">
+            <div class="donut-pct" style="color:var(--yellow)">37%</div>
+            <div class="donut-lbl">UP</div>
+          </div>
+        </div>
+        <div class="legend">
+          <div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div><span>UP</span>
+            <div class="leg-bar-w"><div class="leg-bar" style="width:37%;background:var(--green)"></div></div>
+            <div class="leg-val">58</div></div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--yellow)"></div><span>PARCIAL</span>
+            <div class="leg-bar-w"><div class="leg-bar" style="width:8%;background:var(--yellow)"></div></div>
+            <div class="leg-val">13</div></div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div><span>DOWN</span>
+            <div class="leg-bar-w"><div class="leg-bar" style="width:54%;background:var(--red)"></div></div>
+            <div class="leg-val">84</div></div>
+        </div>
+      </div>
+      <div class="forti-tabs">
+        <div class="tabs-wrap" style="flex:1">
+          <div class="tabs">
+            <div class="tab active" onclick="sw(this,'f-down')">🔴 DOWN (84)</div>
+            <div class="tab" onclick="sw(this,'f-parc')">🟡 PARCIAL (13)</div>
+            <div class="tab" onclick="sw(this,'f-all')">📋 TODOS (155)</div>
+          </div>
+          <div id="f-down" class="tab-body active">
+            <div class="peer-list" style="max-height:290px">
+              <div class="peer-hdr peer-hdr5"><span></span><span>CLIENTE</span><span>IP PEER</span><span>SEL</span><span>EST</span></div>
+              <div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">200.94.94.170</div><div class="peer-ip">200.94.94.170</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">ACTIN_ATT</div><div class="peer-ip">40.124.240.117</div><div class="peer-ip">0/3</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">ALOPRI-CIP</div><div class="peer-ip">208.94.8.17</div><div class="peer-ip">0/66</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">ALOSEC-CIP</div><div class="peer-ip">208.94.12.17</div><div class="peer-ip">0/65</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">ALTYCOM012023</div><div class="peer-ip">190.60.82.109</div><div class="peer-ip">0/9</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">APPIZAPAY_ATT</div><div class="peer-ip">40.121.1.226</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">APPRIZA_ATT</div><div class="peer-ip">104.215.103.134</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">AWS_ATT-IT</div><div class="peer-ip">15.220.184.19</div><div class="peer-ip">0/30</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">AWS_ATT2-IT</div><div class="peer-ip">15.220.184.230</div><div class="peer-ip">0/36</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">AZURE-VDI-QRA</div><div class="peer-ip">158.23.80.2</div><div class="peer-ip">0/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Afiniti_2</div><div class="peer-ip">208.54.250.10</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Amdocs</div><div class="peer-ip">66.138.158.249</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Asurion_ATT</div><div class="peer-ip">96.63.71.32</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">BC022023_PR</div><div class="peer-ip">187.248.81.186</div><div class="peer-ip">0/9</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">BC082022_PR_ATT</div><div class="peer-ip">187.248.54.4</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">BLUE_LABEL</div><div class="peer-ip">52.7.172.15</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">BURO_ATT</div><div class="peer-ip">201.149.24.66</div><div class="peer-ip">0/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Banorte_ATT</div><div class="peer-ip">201.134.170.14</div><div class="peer-ip">3/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">COPERVA_PR_ATT</div><div class="peer-ip">201.168.156.26</div><div class="peer-ip">0/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">COPPELTWO_PR</div><div class="peer-ip">187.216.25.157</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">COPPEL_ATT-03</div><div class="peer-ip">3.132.226.0</div><div class="peer-ip">0/5</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">COPPEL_ATT-04</div><div class="peer-ip">3.129.86.0</div><div class="peer-ip">0/7</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">CTC_PR_ATT</div><div class="peer-ip">184.107.12.4</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">CYNTRA_ATT</div><div class="peer-ip">201.149.37.26</div><div class="peer-ip">34/58</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">CYNTRA_ATT-2</div><div class="peer-ip">201.149.37.30</div><div class="peer-ip">32/60</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Comfone_ATT</div><div class="peer-ip">195.211.14.50</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">DELCAPS_ATT</div><div class="peer-ip">0.0.0.0</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">DHL_ATT</div><div class="peer-ip">156.137.39.21</div><div class="peer-ip">1/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">DIATEL_ATT</div><div class="peer-ip">138.122.98.26</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">DIGISTORE_184</div><div class="peer-ip">187.188.84.184</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">DiestelPrepDiv2</div><div class="peer-ip">200.53.151.132</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">EM-INTL_ATT-02</div><div class="peer-ip">38.77.76.150</div><div class="peer-ip">1/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">EM-INT_ATT-02</div><div class="peer-ip">8.243.215.154</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">EMINTERNATIONAL</div><div class="peer-ip">35.223.14.230</div><div class="peer-ip">4/6</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">EVOCELL_PR</div><div class="peer-ip">206.225.80.112</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">EXPERTCELL_ATT</div><div class="peer-ip">200.66.39.79</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">EZTOP_ATT</div><div class="peer-ip">185.43.194.101</div><div class="peer-ip">10/22</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">GESTOPAGO2_ATT</div><div class="peer-ip">104.196.127.225</div><div class="peer-ip">0/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">GESTOPAGO_ATT</div><div class="peer-ip">34.231.62.21</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">GESTOP_AWS_119</div><div class="peer-ip">18.119.27.148</div><div class="peer-ip">1/8</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">HF_ATT</div><div class="peer-ip">189.206.125.61</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">HONEYWELL1_ATT</div><div class="peer-ip">13.74.184.146</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">HSBC_ATT-01</div><div class="peer-ip">200.16.40.148</div><div class="peer-ip">9/26</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">HSBC_ATT-02</div><div class="peer-ip">200.16.54.148</div><div class="peer-ip">0/26</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">IDEMIA_ATT</div><div class="peer-ip">145.239.168.75</div><div class="peer-ip">1/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">INBURSA_ATT</div><div class="peer-ip">187.237.146.134</div><div class="peer-ip">1/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">INBURSA_ATT-02</div><div class="peer-ip">207.248.129.247</div><div class="peer-ip">4/5</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">INNOVATTIA_ATT</div><div class="peer-ip">101.46.208.8</div><div class="peer-ip">6/10</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Interfactura</div><div class="peer-ip">200.76.152.10</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">JPM_ATT-01</div><div class="peer-ip">146.143.92.65</div><div class="peer-ip">1/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">JPM_ATT-02</div><div class="peer-ip">146.143.29.65</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">LDI_ATT</div><div class="peer-ip">200.94.104.200</div><div class="peer-ip">0/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">MELI_ATT</div><div class="peer-ip">3.220.69.96</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">METAMAP_ATT</div><div class="peer-ip">3.87.150.115</div><div class="peer-ip">18/24</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">MOVNOV2022_PR</div><div class="peer-ip">8.243.104.130</div><div class="peer-ip">0/13</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">MTCDEV2023_PR</div><div class="peer-ip">189.204.158.162</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">NICE_ATT</div><div class="peer-ip">54.146.251.0</div><div class="peer-ip">2/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">NUCEL_ATT</div><div class="peer-ip">18.189.130.206</div><div class="peer-ip">0/6</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">OCI-MTY-TLA-L2L</div><div class="peer-ip">139.177.100.156</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">OFFICEDAR_ATT</div><div class="peer-ip">0.0.0.0</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">OXXO_ATT</div><div class="peer-ip">200.57.162.145</div><div class="peer-ip">3/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">OneLink_A</div><div class="peer-ip">201.163.5.134</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">PAGATODO_ATT_01</div><div class="peer-ip">200.53.182.225</div><div class="peer-ip">3/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">PS2023_PR</div><div class="peer-ip">161.132.103.180</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">PWC_ATT</div><div class="peer-ip">20.106.245.31</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">PartnerHub</div><div class="peer-ip">3.218.105.38</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">PrepayN_PR</div><div class="peer-ip">140.150.202.61</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">RED-EFECTIVA_GATEWAY</div><div class="peer-ip">187.160.245.2</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">RELOADLY_PR_ATT</div><div class="peer-ip">34.236.99.109</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">RPM_ATT</div><div class="peer-ip">148.245.66.226</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">RPM_Soriana_ATT</div><div class="peer-ip">189.254.143.73</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">SANBORNS_ATT-02</div><div class="peer-ip">189.254.69.82</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">SYNIVERSECHI</div><div class="peer-ip">173.209.217.231</div><div class="peer-ip">3/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">SYNIVERSEDALL</div><div class="peer-ip">173.209.216.231</div><div class="peer-ip">0/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">SantaFE1</div><div class="peer-ip">189.204.254.84</div><div class="peer-ip">0/3</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">TRANBOX2023_PR</div><div class="peer-ip">129.213.192.125</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Teambits</div><div class="peer-ip">201.156.18.205</div><div class="peer-ip">0/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">TechMahindra</div><div class="peer-ip">201.149.10.162</div><div class="peer-ip">0/6</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Thales_PR</div><div class="peer-ip">209.209.108.1</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Tiaxa_PR</div><div class="peer-ip">200.57.88.1</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Tralix2_ATT</div><div class="peer-ip">35.165.35.139</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">VPN-Broxel</div><div class="peer-ip">50.56.62.132</div><div class="peer-ip">0/12</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">XIMPLE_ATT</div><div class="peer-ip">3.233.46.88</div><div class="peer-ip">0/7</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">YAAVS_ATT-02</div><div class="peer-ip">48.214.104.83</div><div class="peer-ip">0/8</div><div class="badge badge-down">DOWN</div></div>
+            </div>
+          </div>
+          <div id="f-parc" class="tab-body">
+            <div class="peer-list" style="max-height:290px">
+              <div class="peer-hdr peer-hdr5"><span></span><span>CLIENTE</span><span>IP PEER</span><span>SEL</span><span>EST</span></div>
+              <div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">TRANBOX_ATT</div><div class="peer-ip">129.146.148.125</div><div class="peer-ip">5/6</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">BL_BIMBO_ATT</div><div class="peer-ip">54.156.129.225</div><div class="peer-ip">10/12</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">GPOne_TIP</div><div class="peer-ip">69.89.2.214</div><div class="peer-ip">11/13</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">EMUNAH_ATT</div><div class="peer-ip">52.37.156.15</div><div class="peer-ip">6/7</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">Mediafon_ATT</div><div class="peer-ip">200.188.17.132</div><div class="peer-ip">7/8</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">ARSA_ATT</div><div class="peer-ip">201.116.23.18</div><div class="peer-ip">7/8</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">SANBORNS_ATT-01</div><div class="peer-ip">201.134.168.140</div><div class="peer-ip">8/9</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">ASURION_ATT</div><div class="peer-ip">96.63.79.34</div><div class="peer-ip">9/10</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">TIMWE_ATT</div><div class="peer-ip">185.127.160.177</div><div class="peer-ip">9/10</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">EVOCELL_ATT</div><div class="peer-ip">68.168.105.199</div><div class="peer-ip">12/13</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">AIM-TI_ATT-2</div><div class="peer-ip">189.206.222.82</div><div class="peer-ip">48/50</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">GECOB_ATT</div><div class="peer-ip">64.76.238.226</div><div class="peer-ip">66/68</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">AIM-TI_ATT</div><div class="peer-ip">148.230.212.133</div><div class="peer-ip">49/50</div><div class="badge badge-parcial">PARCIAL</div></div>
+            </div>
+          </div>
+          <div id="f-all" class="tab-body">
+            <div class="peer-list" style="max-height:290px">
+              <div class="peer-hdr peer-hdr5"><span></span><span>CLIENTE</span><span>IP PEER</span><span>SEL</span><span>EST</span></div>
+              <div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">AMDOCS_ATT-01</div><div class="peer-ip">20.93.114.180</div><div class="peer-ip">13/13</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">ASSURANT_ATT</div><div class="peer-ip">167.79.14.174</div><div class="peer-ip">7/7</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">AVAYA-YOIZENATT</div><div class="peer-ip">172.212.84.239</div><div class="peer-ip">19/19</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">AVAYA_ATT</div><div class="peer-ip">198.152.3.4</div><div class="peer-ip">1/1</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">AWS_WIFI1</div><div class="peer-ip">3.92.109.159</div><div class="peer-ip">1/1</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">AWS_WIFI2</div><div class="peer-ip">54.159.93.152</div><div class="peer-ip">1/1</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">Amdocs_eSIM_Azu</div><div class="peer-ip">20.123.72.12</div><div class="peer-ip">1/1</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">Axtel_ATT</div><div class="peer-ip">200.188.61.2</div><div class="peer-ip">2/2</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">BANCOMER</div><div class="peer-ip">148.244.43.160</div><div class="peer-ip">3/3</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">BELMONT_ATT</div><div class="peer-ip">158.23.190.194</div><div class="peer-ip">1/1</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">CASA_LEY_ATT</div><div class="peer-ip">187.141.133.56</div><div class="peer-ip">8/8</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">CONCEPTMOVILATT</div><div class="peer-ip">141.148.175.247</div><div class="peer-ip">6/6</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">COPPEL_ATT-01</div><div class="peer-ip">201.164.155.254</div><div class="peer-ip">4/4</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">COPPEL_ATT-02</div><div class="peer-ip">187.141.155.227</div><div class="peer-ip">4/4</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">CRT_ATT</div><div class="peer-ip">189.203.24.120</div><div class="peer-ip">1/1</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">CYARA_ATT</div><div class="peer-ip">63.251.35.250</div><div class="peer-ip">2/2</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">Costco_ATT</div><div class="peer-ip">201.163.166.126</div><div class="peer-ip">2/2</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">DANACON_ATT</div><div class="peer-ip">18.211.20.182</div><div class="peer-ip">1/1</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">DATALOGIC_ATT01</div><div class="peer-ip">148.240.122.254</div><div class="peer-ip">7/7</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">DING_ATT</div><div class="peer-ip">20.123.114.40</div><div class="peer-ip">4/4</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">DOMINIONGl_ATT</div><div class="peer-ip">90.161.37.244</div><div class="peer-ip">2/2</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">DTONE_ATT</div><div class="peer-ip">13.228.214.126</div><div class="peer-ip">4/4</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">Datalogic_3_ATT</div><div class="peer-ip">3.217.45.55</div><div class="peer-ip">5/5</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">Digipro</div><div class="peer-ip">13.65.32.221</div><div class="peer-ip">5/5</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">DigitalStore</div><div class="peer-ip">18.222.15.137</div><div class="peer-ip">1/1</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">EKT_ATT</div><div class="peer-ip">200.38.111.16</div><div class="peer-ip">1/1</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">FARM-GDL_ATT</div><div class="peer-ip">201.163.120.13</div><div class="peer-ip">8/8</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">FARMACIAGDL_ATT</div><div class="peer-ip">201.144.42.72</div><div class="peer-ip">2/2</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">INE</div><div class="peer-ip">200.34.166.222</div><div class="peer-ip">1/1</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">JASPER_ATT</div><div class="peer-ip">204.16.68.18</div><div class="peer-ip">4/4</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">KIOSCO_ATT</div><div class="peer-ip">200.94.104.222</div><div class="peer-ip">4/4</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">LATCOMI_ATT</div><div class="peer-ip">66.119.65.254</div><div class="peer-ip">4/4</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">MERCADO_PAG_ATT</div><div class="peer-ip">34.237.129.81</div><div class="peer-ip">4/4</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">MOBO_ATT</div><div class="peer-ip">187.188.106.147</div><div class="peer-ip">14/14</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">MOVIVENDOR_ATT</div><div class="peer-ip">34.51.83.159</div><div class="peer-ip">10/10</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">MTCR2023_PR_ATT</div><div class="peer-ip">44.210.17.6</div><div class="peer-ip">7/7</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">NEXOCELL2_ATT</div><div class="peer-ip">13.59.185.230</div><div class="peer-ip">2/2</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">NEXOCELL_ATT</div><div class="peer-ip">3.136.202.78</div><div class="peer-ip">2/2</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">PAGATODO_ATT</div><div class="peer-ip">172.214.3.166</div><div class="peer-ip">4/4</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">PREPAY-NATION</div><div class="peer-ip">162.213.190.111</div><div class="peer-ip">8/8</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">PRICE-SHOES_ATT</div><div class="peer-ip">148.245.61.205</div><div class="peer-ip">8/8</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">PartnerHub_2</div><div class="peer-ip">34.207.2.50</div><div class="peer-ip">1/1</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">RED_EFTVA_ATT</div><div class="peer-ip">54.145.246.250</div><div class="peer-ip">5/5</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">RPM_ATT-02</div><div class="peer-ip">148.245.85.130</div><div class="peer-ip">15/15</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">RPM_ATT-03</div><div class="peer-ip">189.254.143.75</div><div class="peer-ip">14/14</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">RUBEL_ATT</div><div class="peer-ip">192.95.33.51</div><div class="peer-ip">6/6</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">SCOTIABANK_ATT</div><div class="peer-ip">168.165.13.4</div><div class="peer-ip">2/2</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">SIMMPAPEL_ATT</div><div class="peer-ip">13.84.186.77</div><div class="peer-ip">1/1</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">SYMPHONICA_ATT</div><div class="peer-ip">34.200.11.77</div><div class="peer-ip">1/1</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">TELCEL_ATT</div><div class="peer-ip">200.95.161.2</div><div class="peer-ip">2/2</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">TOTAL_PLAY_ATT</div><div class="peer-ip">187.190.128.193</div><div class="peer-ip">1/1</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">TRALIX_ATT-01</div><div class="peer-ip">34.208.100.240</div><div class="peer-ip">1/1</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">TRALIX_ATT-02</div><div class="peer-ip">52.13.134.173</div><div class="peer-ip">1/1</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">UNDOSTRES_ATT</div><div class="peer-ip">54.177.214.38</div><div class="peer-ip">6/6</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">VPN-DIGIPRO-1</div><div class="peer-ip">40.124.208.69</div><div class="peer-ip">1/1</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">XIMPLE_01</div><div class="peer-ip">3.232.207.156</div><div class="peer-ip">6/6</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">YAAVS_ATT-01</div><div class="peer-ip">187.189.131.119</div><div class="peer-ip">4/4</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--green)"></div><div class="peer-name">izzi_ATT</div><div class="peer-ip">177.233.162.217</div><div class="peer-ip">2/2</div><div class="badge badge-up">UP</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">TRANBOX_ATT</div><div class="peer-ip">129.146.148.125</div><div class="peer-ip">5/6</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">BL_BIMBO_ATT</div><div class="peer-ip">54.156.129.225</div><div class="peer-ip">10/12</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">GPOne_TIP</div><div class="peer-ip">69.89.2.214</div><div class="peer-ip">11/13</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">EMUNAH_ATT</div><div class="peer-ip">52.37.156.15</div><div class="peer-ip">6/7</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">Mediafon_ATT</div><div class="peer-ip">200.188.17.132</div><div class="peer-ip">7/8</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">ARSA_ATT</div><div class="peer-ip">201.116.23.18</div><div class="peer-ip">7/8</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">SANBORNS_ATT-01</div><div class="peer-ip">201.134.168.140</div><div class="peer-ip">8/9</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">ASURION_ATT</div><div class="peer-ip">96.63.79.34</div><div class="peer-ip">9/10</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">TIMWE_ATT</div><div class="peer-ip">185.127.160.177</div><div class="peer-ip">9/10</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">EVOCELL_ATT</div><div class="peer-ip">68.168.105.199</div><div class="peer-ip">12/13</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">AIM-TI_ATT-2</div><div class="peer-ip">189.206.222.82</div><div class="peer-ip">48/50</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">GECOB_ATT</div><div class="peer-ip">64.76.238.226</div><div class="peer-ip">66/68</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--yellow)"></div><div class="peer-name">AIM-TI_ATT</div><div class="peer-ip">148.230.212.133</div><div class="peer-ip">49/50</div><div class="badge badge-parcial">PARCIAL</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">200.94.94.170</div><div class="peer-ip">200.94.94.170</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">ACTIN_ATT</div><div class="peer-ip">40.124.240.117</div><div class="peer-ip">0/3</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">ALOPRI-CIP</div><div class="peer-ip">208.94.8.17</div><div class="peer-ip">0/66</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">ALOSEC-CIP</div><div class="peer-ip">208.94.12.17</div><div class="peer-ip">0/65</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">ALTYCOM012023</div><div class="peer-ip">190.60.82.109</div><div class="peer-ip">0/9</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">APPIZAPAY_ATT</div><div class="peer-ip">40.121.1.226</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">APPRIZA_ATT</div><div class="peer-ip">104.215.103.134</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">AWS_ATT-IT</div><div class="peer-ip">15.220.184.19</div><div class="peer-ip">0/30</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">AWS_ATT2-IT</div><div class="peer-ip">15.220.184.230</div><div class="peer-ip">0/36</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">AZURE-VDI-QRA</div><div class="peer-ip">158.23.80.2</div><div class="peer-ip">0/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Afiniti_2</div><div class="peer-ip">208.54.250.10</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Amdocs</div><div class="peer-ip">66.138.158.249</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Asurion_ATT</div><div class="peer-ip">96.63.71.32</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">BC022023_PR</div><div class="peer-ip">187.248.81.186</div><div class="peer-ip">0/9</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">BC082022_PR_ATT</div><div class="peer-ip">187.248.54.4</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">BLUE_LABEL</div><div class="peer-ip">52.7.172.15</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">BURO_ATT</div><div class="peer-ip">201.149.24.66</div><div class="peer-ip">0/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Banorte_ATT</div><div class="peer-ip">201.134.170.14</div><div class="peer-ip">3/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">COPERVA_PR_ATT</div><div class="peer-ip">201.168.156.26</div><div class="peer-ip">0/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">COPPELTWO_PR</div><div class="peer-ip">187.216.25.157</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">COPPEL_ATT-03</div><div class="peer-ip">3.132.226.0</div><div class="peer-ip">0/5</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">COPPEL_ATT-04</div><div class="peer-ip">3.129.86.0</div><div class="peer-ip">0/7</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">CTC_PR_ATT</div><div class="peer-ip">184.107.12.4</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">CYNTRA_ATT</div><div class="peer-ip">201.149.37.26</div><div class="peer-ip">34/58</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">CYNTRA_ATT-2</div><div class="peer-ip">201.149.37.30</div><div class="peer-ip">32/60</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Comfone_ATT</div><div class="peer-ip">195.211.14.50</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">DELCAPS_ATT</div><div class="peer-ip">0.0.0.0</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">DHL_ATT</div><div class="peer-ip">156.137.39.21</div><div class="peer-ip">1/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">DIATEL_ATT</div><div class="peer-ip">138.122.98.26</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">DIGISTORE_184</div><div class="peer-ip">187.188.84.184</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">DiestelPrepDiv2</div><div class="peer-ip">200.53.151.132</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">EM-INTL_ATT-02</div><div class="peer-ip">38.77.76.150</div><div class="peer-ip">1/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">EM-INT_ATT-02</div><div class="peer-ip">8.243.215.154</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">EMINTERNATIONAL</div><div class="peer-ip">35.223.14.230</div><div class="peer-ip">4/6</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">EVOCELL_PR</div><div class="peer-ip">206.225.80.112</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">EXPERTCELL_ATT</div><div class="peer-ip">200.66.39.79</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">EZTOP_ATT</div><div class="peer-ip">185.43.194.101</div><div class="peer-ip">10/22</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">GESTOPAGO2_ATT</div><div class="peer-ip">104.196.127.225</div><div class="peer-ip">0/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">GESTOPAGO_ATT</div><div class="peer-ip">34.231.62.21</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">GESTOP_AWS_119</div><div class="peer-ip">18.119.27.148</div><div class="peer-ip">1/8</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">HF_ATT</div><div class="peer-ip">189.206.125.61</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">HONEYWELL1_ATT</div><div class="peer-ip">13.74.184.146</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">HSBC_ATT-01</div><div class="peer-ip">200.16.40.148</div><div class="peer-ip">9/26</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">HSBC_ATT-02</div><div class="peer-ip">200.16.54.148</div><div class="peer-ip">0/26</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">IDEMIA_ATT</div><div class="peer-ip">145.239.168.75</div><div class="peer-ip">1/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">INBURSA_ATT</div><div class="peer-ip">187.237.146.134</div><div class="peer-ip">1/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">INBURSA_ATT-02</div><div class="peer-ip">207.248.129.247</div><div class="peer-ip">4/5</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">INNOVATTIA_ATT</div><div class="peer-ip">101.46.208.8</div><div class="peer-ip">6/10</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Interfactura</div><div class="peer-ip">200.76.152.10</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">JPM_ATT-01</div><div class="peer-ip">146.143.92.65</div><div class="peer-ip">1/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">JPM_ATT-02</div><div class="peer-ip">146.143.29.65</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">LDI_ATT</div><div class="peer-ip">200.94.104.200</div><div class="peer-ip">0/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">MELI_ATT</div><div class="peer-ip">3.220.69.96</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">METAMAP_ATT</div><div class="peer-ip">3.87.150.115</div><div class="peer-ip">18/24</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">MOVNOV2022_PR</div><div class="peer-ip">8.243.104.130</div><div class="peer-ip">0/13</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">MTCDEV2023_PR</div><div class="peer-ip">189.204.158.162</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">NICE_ATT</div><div class="peer-ip">54.146.251.0</div><div class="peer-ip">2/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">NUCEL_ATT</div><div class="peer-ip">18.189.130.206</div><div class="peer-ip">0/6</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">OCI-MTY-TLA-L2L</div><div class="peer-ip">139.177.100.156</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">OFFICEDAR_ATT</div><div class="peer-ip">0.0.0.0</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">OXXO_ATT</div><div class="peer-ip">200.57.162.145</div><div class="peer-ip">3/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">OneLink_A</div><div class="peer-ip">201.163.5.134</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">PAGATODO_ATT_01</div><div class="peer-ip">200.53.182.225</div><div class="peer-ip">3/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">PS2023_PR</div><div class="peer-ip">161.132.103.180</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">PWC_ATT</div><div class="peer-ip">20.106.245.31</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">PartnerHub</div><div class="peer-ip">3.218.105.38</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">PrepayN_PR</div><div class="peer-ip">140.150.202.61</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">RED-EFECTIVA_GATEWAY</div><div class="peer-ip">187.160.245.2</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">RELOADLY_PR_ATT</div><div class="peer-ip">34.236.99.109</div><div class="peer-ip">0/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">RPM_ATT</div><div class="peer-ip">148.245.66.226</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">RPM_Soriana_ATT</div><div class="peer-ip">189.254.143.73</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">SANBORNS_ATT-02</div><div class="peer-ip">189.254.69.82</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">SYNIVERSECHI</div><div class="peer-ip">173.209.217.231</div><div class="peer-ip">3/4</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">SYNIVERSEDALL</div><div class="peer-ip">173.209.216.231</div><div class="peer-ip">0/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">SantaFE1</div><div class="peer-ip">189.204.254.84</div><div class="peer-ip">0/3</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">TRANBOX2023_PR</div><div class="peer-ip">129.213.192.125</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Teambits</div><div class="peer-ip">201.156.18.205</div><div class="peer-ip">0/2</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">TechMahindra</div><div class="peer-ip">201.149.10.162</div><div class="peer-ip">0/6</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Thales_PR</div><div class="peer-ip">209.209.108.1</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Tiaxa_PR</div><div class="peer-ip">200.57.88.1</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">Tralix2_ATT</div><div class="peer-ip">35.165.35.139</div><div class="peer-ip">0/1</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">VPN-Broxel</div><div class="peer-ip">50.56.62.132</div><div class="peer-ip">0/12</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">XIMPLE_ATT</div><div class="peer-ip">3.233.46.88</div><div class="peer-ip">0/7</div><div class="badge badge-down">DOWN</div></div><div class="peer-row peer-row5"><div class="peer-dot" style="background:var(--red)"></div><div class="peer-name">YAAVS_ATT-02</div><div class="peer-ip">48.214.104.83</div><div class="peer-ip">0/8</div><div class="badge badge-down">DOWN</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="footer">
-  GENERADO AUTOMÁTICAMENTE · 2026-03-06 08:03:12 CST · SSH JUNIPER EXTENSIVE POLLING
+  <span>NOC DASHBOARD v2.0 — AT&amp;T México</span>
+  <span>Generado: 2026-03-07 23:39</span>
+  <span>GitHub Pages · HOKU/Teams</span>
 </div>
 
+<script>
+function sw(el, id) {
+  const wrap = el.closest('.tabs-wrap');
+  wrap.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  wrap.querySelectorAll('.tab-body').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+</script>
 </body>
 </html>
