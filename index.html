@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>NOC Dashboard — AT&T México</title>
+<title>DATACOM Dashboard — AT&T México</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;900&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -124,7 +124,15 @@ body{
 .forti-donut{padding:16px;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;}
 .forti-tabs{display:flex;flex-direction:column;}
 .no-data{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:24px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:12px;margin-bottom:18px;letter-spacing:1px;}
-.footer{border-top:1px solid var(--border);padding:14px 28px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;color:var(--dim);}
+.footer{border-top:1px solid var(--border);padding:16px 28px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;color:var(--dim);background:rgba(0,0,0,.3);gap:16px;}
+.footer-left{display:flex;flex-direction:column;gap:3px;}
+.footer-brand{color:var(--accent);letter-spacing:2px;font-size:11px;}
+.footer-rights{color:var(--dim);font-size:9px;letter-spacing:1px;}
+.footer-center{color:var(--text);letter-spacing:1px;white-space:nowrap;}
+.footer-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+.footer-dev{color:var(--white);letter-spacing:1px;}
+.footer-dev strong{color:var(--accent);}
+.footer-tech{color:var(--dim);font-size:9px;letter-spacing:1px;}
 /* ── TABLA CUMPLIMIENTOS ── */
 .cumpl-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:18px;border-top:2px solid #a855f7;}
 .cumpl-table{width:100%;border-collapse:collapse;}
@@ -152,12 +160,12 @@ body{
 
 <div class="header">
   <div class="header-l">
-    <div class="logo">NOC <span>Dashboard</span></div>
+    <div class="logo">DATACOM <span>Dashboard</span></div>
     <div class="hbadge">AT&amp;T MÉXICO</div>
   </div>
   <div class="header-r">
     <span><span class="live-dot"></span>EN VIVO</span>
-    <span>PUBLICADO: 2026-03-08 12:46</span>
+    <span>PUBLICADO: 2026-03-08 12:52</span>
   </div>
 </div>
 
@@ -1000,9 +1008,15 @@ body{
 </div>
 
 <div class="footer">
-  <span>NOC DASHBOARD v2.0 — AT&amp;T México</span>
-  <span>Generado: 2026-03-08 12:46</span>
-  <span>GitHub Pages · HOKU/Teams</span>
+  <div class="footer-left">
+    <span class="footer-brand">DATACOM DASHBOARD v2.0 — AT&amp;T México</span>
+    <span class="footer-rights">© Todos los derechos reservados · Security IP Core · Exclusivo para uso interno AT&amp;T</span>
+  </div>
+  <span class="footer-center">Generado: 2026-03-08 12:52</span>
+  <div class="footer-right">
+    <span class="footer-dev">Desarrollado por <strong>mr3675</strong></span>
+    <span class="footer-tech">GitHub Pages · HOKU/Teams</span>
+  </div>
 </div>
 
 <script>
